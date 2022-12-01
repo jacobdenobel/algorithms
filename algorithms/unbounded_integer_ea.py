@@ -13,20 +13,23 @@ class Individual:
     y: float = float("inf") 
     
     def mutate(self):
-        n = self.x.size
+        # Mutate sigma by a lognormal dist. of zero mean and 1/n variance.
         rs = np.random.normal(0, np.sqrt(1 / self.x.size))
         self.sigma = max(self.sigma * np.exp(rs), 1.0)
         
         # Equation (7)
-        s_over_n = self.sigma / n
+        s_over_n = self.sigma / self.x.size
         p = 1 - (s_over_n / (np.sqrt(1 + pow(s_over_n, 2)) + 1))
 
+
+        # Mutate x by adding the difference of two geom. dist. random variables
         log_p = np.log(1 - p)
-        g1 = np.floor(np.log(1 - np.random.uniform(0, 1, n)) / log_p).astype(int)
-        g2 = np.floor(np.log(1 - np.random.uniform(0, 1, n)) / log_p).astype(int)
+        g1 = np.floor(np.log(1 - np.random.uniform(0, 1, self.x.size)) / log_p).astype(int)
+        g2 = np.floor(np.log(1 - np.random.uniform(0, 1, self.x.size)) / log_p).astype(int)
         self.x += (g1 - g2)
 
     def recombine(self, other: "Individual") -> "Individual":
+        # Random uniform recombination
         mask = np.random.randint(0, 2, size=self.x.size).astype(bool)
         return Individual(
             sigma=(self.sigma + other.sigma) / 2,
@@ -100,7 +103,7 @@ if __name__ == "__main__":
     n_iterations = 2000
 
     p1 = ioh.wrap_problem(f1, "f1", "Integer", 30, lb=-1000, ub=1000, calculate_objective=ca)
-    ea = UnboundedIntegerEA(30, 100, sigma0=1000/3, n_iterations=n_iterations)
+    ea = UnboundedIntegerEA(30, 100, n_iterations=n_iterations)
     
     n_gens = []
     for i in trange(n_trails):
