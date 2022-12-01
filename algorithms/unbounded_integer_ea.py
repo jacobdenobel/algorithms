@@ -1,3 +1,4 @@
+'''Source: An Evolutionary Algorithm for Integer Programming - Gunter Rudolf'''
 from dataclasses import dataclass
 
 import numpy as np
@@ -93,27 +94,50 @@ class UnboundedIntegerEA:
 def f1(x: np.ndarray):
     return np.linalg.norm(x, ord = 1)
 
+def f2(x: np.ndarray):
+    return np.linalg.norm(x, ord = 2)
+
+def f3(x: np.ndarray):
+    y = np.array([
+        [35, -20, -10, 32, -10],
+        [-20, 40, -6, -31, 32],
+        [-10, -6, 11, -6, -10],
+        [32, -31, -6, 38, -20],
+        [-10, 32, -10, -20, 31],
+    ])
+    v = np.array([15, 27, 36, 18, 12])
+    
+    return -(v.dot(x) - x.T.dot(y).dot(x))
+
 def ca(dim, _):
     return [0] * dim, 0.0
+
+def ca2(*args):
+    return np.array([0, 11, 22, 16, 6]), -737
 
 
 if __name__ == "__main__":
     np.random.seed(10)
     n_trails = 100
-    n_iterations = 2000
+    n_iterations = 1000
+    verbose = False
 
     p1 = ioh.wrap_problem(f1, "f1", "Integer", 30, lb=-1000, ub=1000, calculate_objective=ca)
-    ea = UnboundedIntegerEA(30, 100, n_iterations=n_iterations)
+    p2 = ioh.wrap_problem(f2, "f2", "Integer", 30, lb=-1000, ub=1000, calculate_objective=ca)
+    p3 = ioh.wrap_problem(f3, "f3", "Integer", 5, lb=0, ub=100, calculate_objective=ca2)
+    ea = UnboundedIntegerEA(30, 100, n_iterations=n_iterations, verbose=verbose)
     
     n_gens = []
-    for i in trange(n_trails):
-        ea(p1)
-        n_gens.append(ea.current)
-        p1.reset()
-    
-    print(
-        f"Min: {np.min(n_gens)}, Max: {np.max(n_gens)}, "
-        f"Mean: {np.mean(n_gens)}, std.dev: {np.std(n_gens)}, "
-        f"skew: {skew(n_gens)}"
-    )
+    for p in (p1, p2, p3,):
+        for i in trange(n_trails):
+            ea(p)
+            n_gens.append(ea.current)
+            p.reset()
+        
+        print(
+            f"Problem: {p}: "
+            f"Min: {np.min(n_gens)}, Max: {np.max(n_gens)}, "
+            f"Mean: {np.mean(n_gens)}, std.dev: {np.std(n_gens)}, "
+            f"skew: {skew(n_gens)}"
+        )
 
