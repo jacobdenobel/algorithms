@@ -118,7 +118,7 @@ def ca2(*args):
 
 if __name__ == "__main__":
     np.random.seed(10)
-    n_trails = 100
+    n_trails = 1000
     n_iterations = 1000
     verbose = False
 
@@ -127,8 +127,8 @@ if __name__ == "__main__":
     p3 = ioh.wrap_problem(f3, "f3", "Integer", 5, lb=0, ub=100, calculate_objective=ca2)
     ea = UnboundedIntegerEA(30, 100, n_iterations=n_iterations, verbose=verbose)
     
-    n_gens = []
     for p in (p1, p2, p3,):
+        n_gens = []
         for i in trange(n_trails):
             ea(p)
             n_gens.append(ea.current)
