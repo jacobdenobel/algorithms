@@ -2,9 +2,10 @@
 from dataclasses import dataclass
 
 import numpy as np
-from scipy.stats import skew
 from tqdm import trange
 import ioh
+
+from .algorithm import Algorithm, DEFAULT_MAX_BUDGET
 
 
 @dataclass
@@ -22,7 +23,6 @@ class Individual:
         s_over_n = self.sigma / self.x.size
         p = 1 - (s_over_n / (np.sqrt(1 + pow(s_over_n, 2)) + 1))
 
-
         # Mutate x by adding the difference of two geom. dist. random variables
         log_p = np.log(1 - p)
         g1 = np.floor(np.log(1 - np.random.uniform(0, 1, self.x.size)) / log_p).astype(int)
@@ -39,16 +39,14 @@ class Individual:
 
  
 @dataclass
-class UnboundedIntegerEA:
+class UnboundedIntegerEA(Algorithm):
     mu: int
     lambda_: int
-    n_iterations: int = 1000
-    current: int = 0
+    budget: int = DEFAULT_MAX_BUDGET
     sigma0: float = None
     verbose: bool = False
 
     def __call__(self, problem: ioh.problem.Integer):
-        self.current = 0
         
         # Sigma proportional to the nth root of the starting area M
         self.sigma0 = self.sigma0 or np.prod(
@@ -67,7 +65,9 @@ class UnboundedIntegerEA:
             ) for _ in range(self.mu)
         ]
         
-        while not self.done and not problem.state.optimum_found:
+        # while not self.done and not problem.state.optimum_found:
+        while problem.state.evaluations < (self.budget - self.lambda_) and \
+                not problem.state.optimum_found:
             new_pop = []
             for _ in range(self.lambda_):
                 # Randomly select two parents 
@@ -81,15 +81,11 @@ class UnboundedIntegerEA:
             new_pop.sort(key=lambda i:i.y)
             pop = new_pop[:self.mu]
 
-            if self.current % 10 == 0 and self.verbose:
-                print(self.current, problem.state)
-            
+            if problem.state.evaluations % 100 == 0 and self.verbose:
+                print(problem.state.evaluations, problem.state)
 
-    @property
-    def done(self):
-        if self.current >= self.n_iterations:
-            return True
-        self.current += 1
+        return problem.state.current_best
+
 
 def f1(x: np.ndarray):
     return np.linalg.norm(x, ord = 1)
@@ -116,7 +112,57 @@ def ca2(*args):
     return np.array([0, 11, 22, 16, 6]), -737
 
 
-if __name__ == "__main__":
+@dataclass
+class Bounds:
+    lb: np.ndarray
+    ub: np.ndarray
+
+@dataclass
+class DiscreteBBOB:
+    function: ioh.problem.Real
+    step: float = 0.1
+    as_integer: bool = True
+
+    def __post_init__(self):
+        self.translation = self.function.optimum.x % self.step
+
+    def __call__(self, x):
+        x_prime = x.astype(float)
+        if self.as_integer:
+            x_prime *= self.step
+        x_prime = x_prime + self.translation
+        return self.function(x_prime)
+
+    @property
+    def meta_data(self):
+        return self.function.meta_data
+
+    @property
+    def state(self):
+        return self.function.state
+
+    @property
+    def bounds(self):
+        bounds = self.function.bounds
+        divider = self.step if self.as_integer else 1.
+        t = int if self.as_integer else float
+        return Bounds(
+            (bounds.lb / divider).astype(t),
+            (bounds.ub / divider).astype(t),
+        )
+
+
+def test_discrete_bbob(pid=1, iid=1, dim=100, stepsize=.1):
+    bbob_function = ioh.get_problem(pid, iid, dim)
+    problem = DiscreteBBOB(bbob_function, step=stepsize)
+    ea = UnboundedIntegerEA(10, 20, budget=dim * 1e4)
+    ea(problem)
+    print(problem.state) 
+    return ea, problem  
+
+
+def paper_experiments():
+    from scipy.stats import skew
     np.random.seed(10)
     n_trails = 1000
     n_iterations = 1000
@@ -141,3 +187,6 @@ if __name__ == "__main__":
             f"skew: {skew(n_gens)}"
         )
 
+
+if __name__ == "__main__":
+    main()

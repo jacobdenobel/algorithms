@@ -1,36 +1,28 @@
-from typing import Tuple
+from dataclasses import dataclass
 
 import ioh
 import numpy as np
 
-from .algorithm import Algorithm
+from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 from .plotting  import plot_positions_interactive
 
+@dataclass
 class ParticleSwarmOptimization(Algorithm):
-    def __init__(
-        self,
-        s=10,
-        max_iterations=1_000,
-        inertia=0.5,
-        psi_p=0.5,
-        psi_g=0.5,
-        verbose=False,
-    ) -> None:
-        self.s = s
-        self.max_iterations = max_iterations
-        self.inertia = inertia
-        self.psi_p = psi_p
-        self.psi_g = psi_g
-        self.verbose = verbose
+    budget: int = DEFAULT_MAX_BUDGET
+    s: int = 50
+    inertia: float = .5
+    psi_p: float = 1.5
+    psi_g: float = 1.5
+    verbose: bool = False
 
-    def __call__(self, problem: ioh.problem.Real) -> Tuple[float, np.array]:
+    def __call__(self, problem: ioh.problem.Real) -> SolutionType:
         positions = np.random.uniform(
-            problem.constraint.lb,
-            problem.constraint.ub,
+            problem.bounds.lb,
+            problem.bounds.ub,
             size=(self.s, problem.meta_data.n_variables),
         )
         domain = np.abs(
-            np.array(problem.constraint.ub) - np.array(problem.constraint.lb)
+            np.array(problem.bounds.ub) - np.array(problem.bounds.lb)
         )
         velocity = np.random.uniform(
             -domain, domain, size=(self.s, problem.meta_data.n_variables)
@@ -42,7 +34,7 @@ class ParticleSwarmOptimization(Algorithm):
         idx = np.argmin(f)
         ymin, xmin = f[idx], positions[idx, :]
 
-        for i in range(self.max_iterations):
+        while problem.state.evaluations <= (self.budget - self.s) and not problem.state.optimum_found:
             rp = np.random.uniform(size=(self.s, 1))
             rg = np.random.uniform(size=(self.s, 1))
             velocity = (

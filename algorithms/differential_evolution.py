@@ -1,27 +1,28 @@
+from dataclasses import dataclass
+
 import ioh
 import numpy as np
 
-from .algorithm import Algorithm, SolutionType
+from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 
-
+@dataclass
 class DifferentialEvolution(Algorithm):
-    def __init__(self, np=10, cr=0.9, f=.5, max_iterations=1000):
-        self.np = np
-        self.cr = cr
-        self.f = f
-        self.max_iterations = max_iterations
+    budget:int = DEFAULT_MAX_BUDGET
+    np: int = 10
+    cr: float = .9
+    f: float = .8
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         population = np.random.uniform(
-            problem.constraint.lb,
-            problem.constraint.ub,
+            problem.bounds.lb,
+            problem.bounds.ub,
             (self.np, problem.meta_data.n_variables),
         )
         f = np.array([problem(x) for x in population])
 
         pmask = [np.where(x)[0] for x in np.abs(np.eye(self.np) - 1).astype(bool)]
 
-        for _ in range(self.max_iterations):
+        while problem.state.evaluations <= (self.budget - self.np) and not problem.state.optimum_found:
             for i, m in enumerate(pmask):
                 x, y = population[i].copy(), f[i]
                 a, b, c = population[np.random.choice(m, size=3, replace=False)]
@@ -41,5 +42,4 @@ class DifferentialEvolution(Algorithm):
                     break
 
         idxmin = np.argmin(f)
-        print(problem.state)
         return f[idxmin], population[idxmin]
