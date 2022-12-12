@@ -15,13 +15,15 @@ class Individual:
     y: float = float("inf") 
     
     def mutate(self):
+        # TODO: check how we can PROPERLY add multiple N variances
+        scale = self.x.size * self.sigma.size
         # Mutate sigma by a lognormal dist. of zero mean and 1/n variance.
-        rs = np.random.normal(0, np.sqrt(1 / self.x.size))
-        self.sigma = max(self.sigma * np.exp(rs), 1.0)
-        
+        rs = np.random.normal(0, 1 / scale, size=self.sigma.size)
+        self.sigma = np.clip(self.sigma * np.exp(rs), 1.0, np.inf)
+
         # Equation (7)
-        s_over_n = self.sigma / self.x.size
-        p = 1 - (s_over_n / (np.sqrt(1 + pow(s_over_n, 2)) + 1))
+        s_over_n = self.sigma / scale
+        p = 1 - (s_over_n / (np.sqrt(1 + np.power(s_over_n, 2)) + 1))
 
         # Mutate x by adding the difference of two geom. dist. random variables
         log_p = np.log(1 - p)
@@ -44,17 +46,20 @@ class UnboundedIntegerEA(Algorithm):
     lambda_: int
     budget: int = DEFAULT_MAX_BUDGET
     sigma0: float = None
+    n_sigma: bool = True 
     verbose: bool = False
 
     def __call__(self, problem: ioh.problem.Integer):
-        
         # Sigma proportional to the nth root of the starting area M
-        self.sigma0 = self.sigma0 or np.prod(
-            pow(
-                np.abs((problem.bounds.lb - problem.bounds.ub)),  
-                1 / problem.meta_data.n_variables
+        if not self.n_sigma:
+            self.sigma0 = self.sigma0 or np.prod(
+                pow(
+                    np.abs((problem.bounds.lb - problem.bounds.ub)),  
+                    1 / problem.meta_data.n_variables
+                )
             )
-        )
+        else:
+            self.sigma0 = np.sqrt(np.abs(problem.bounds.lb - problem.bounds.ub)).astype(int)
 
         # Initialize parent population
         pop = [
@@ -153,6 +158,7 @@ class DiscreteBBOB:
 
 
 def test_discrete_bbob(pid=1, iid=1, dim=100, stepsize=.1):
+    np.random.seed(10)
     bbob_function = ioh.get_problem(pid, iid, dim)
     problem = DiscreteBBOB(bbob_function, step=stepsize)
     ea = UnboundedIntegerEA(10, 20, budget=dim * 1e4)

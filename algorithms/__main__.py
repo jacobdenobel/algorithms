@@ -31,5 +31,5 @@ multi = (
 
 
 if __name__ == '__main__':
-    test_discrete_bbob(1, 1, 100, .0001) 
+    test_discrete_bbob(2, 1, 10, .1) 
     
