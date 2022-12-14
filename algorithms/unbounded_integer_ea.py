@@ -16,19 +16,24 @@ class Individual:
     
     def mutate(self):
         # TODO: check how we can PROPERLY add multiple N variances
-        scale = self.x.size * self.sigma.size
-        # Mutate sigma by a lognormal dist. of zero mean and 1/n variance.
-        rs = np.random.normal(0, 1 / scale, size=self.sigma.size)
+
+        # Mutate sigma by a lognornormal dist. of zero mean and 1/n variance.
+        rs = np.random.normal(0, 1 / self.x.size, size=self.sigma.size)
+        # n = self.x.size
+        # tau = 1 / (np.sqrt(2 * np.sqrt(n)))
+        # eta = 1 / np.sqrt(2 * n)
+        # rs = 
         self.sigma = np.clip(self.sigma * np.exp(rs), 1.0, np.inf)
 
         # Equation (7)
-        s_over_n = self.sigma / scale
-        p = 1 - (s_over_n / (np.sqrt(1 + np.power(s_over_n, 2)) + 1))
+        s_over_n = self.sigma 
+        P = 1 - (s_over_n / (np.sqrt(1 + np.power(s_over_n, 2)) + 1))
 
         # Mutate x by adding the difference of two geom. dist. random variables
-        log_p = np.log(1 - p)
+        log_p = np.log(1 - P)
         g1 = np.floor(np.log(1 - np.random.uniform(0, 1, self.x.size)) / log_p).astype(int)
         g2 = np.floor(np.log(1 - np.random.uniform(0, 1, self.x.size)) / log_p).astype(int)
+
         self.x += (g1 - g2)
 
     def recombine(self, other: "Individual") -> "Individual":
@@ -46,25 +51,26 @@ class UnboundedIntegerEA(Algorithm):
     lambda_: int
     budget: int = DEFAULT_MAX_BUDGET
     sigma0: float = None
-    n_sigma: bool = True 
+    # This does not work
+    n_sigma: bool = True
     verbose: bool = False
 
     def __call__(self, problem: ioh.problem.Integer):
         # Sigma proportional to the nth root of the starting area M
-        if not self.n_sigma:
-            self.sigma0 = self.sigma0 or np.prod(
-                pow(
-                    np.abs((problem.bounds.lb - problem.bounds.ub)),  
-                    1 / problem.meta_data.n_variables
-                )
+        self.sigma0 = self.sigma0 or np.prod(
+            pow(
+                np.abs((problem.bounds.lb - problem.bounds.ub)),  
+                1 / problem.meta_data.n_variables
             )
-        else:
-            self.sigma0 = np.sqrt(np.abs(problem.bounds.lb - problem.bounds.ub)).astype(int)
+        ) / problem.meta_data.n_variables
+
+        if self.n_sigma:
+            self.sigma0 *= np.ones(problem.meta_data.n_variables) 
 
         # Initialize parent population
         pop = [
             Individual(
-                sigma=np.random.uniform(0, 1) * self.sigma0, 
+                sigma=np.random.uniform(0, 1, size=self.sigma0.size) * self.sigma0, 
                 x=(xi := np.random.randint(problem.bounds.lb, problem.bounds.ub)),
                 y=problem(xi)
             ) for _ in range(self.mu)
@@ -86,8 +92,11 @@ class UnboundedIntegerEA(Algorithm):
             new_pop.sort(key=lambda i:i.y)
             pop = new_pop[:self.mu]
 
-            if problem.state.evaluations % 100 == 0 and self.verbose:
-                print(problem.state.evaluations, problem.state)
+            if ((problem.state.evaluations - self.mu) / self.lambda_ ) % 10 == 0 and self.verbose:
+                print(problem.state.evaluations)
+                print(np.array([x.sigma for x in pop]).mean(axis=0))
+                print(problem.state.current_best.x - problem.function.optimum.x)
+                print()
 
         return problem.state.current_best
 
@@ -135,6 +144,7 @@ class DiscreteBBOB:
         x_prime = x.astype(float)
         if self.as_integer:
             x_prime *= self.step
+            
         x_prime = x_prime + self.translation
         return self.function(x_prime)
 
@@ -157,13 +167,15 @@ class DiscreteBBOB:
         )
 
 
-def test_discrete_bbob(pid=1, iid=1, dim=100, stepsize=.1):
-    np.random.seed(10)
+def test_discrete_bbob(pid=1, iid=1, dim=100, stepsize=.1, budget=1e4):
+    np.random.seed(20)
     bbob_function = ioh.get_problem(pid, iid, dim)
     problem = DiscreteBBOB(bbob_function, step=stepsize)
-    ea = UnboundedIntegerEA(10, 20, budget=dim * 1e4)
+    ea = UnboundedIntegerEA(10, 20, budget=budget)
     ea(problem)
+
     print(problem.state) 
+    # print(problem.function.optimum)
     return ea, problem  
 
 
@@ -193,6 +205,3 @@ def paper_experiments():
             f"skew: {skew(n_gens)}"
         )
 
-
-if __name__ == "__main__":
-    main()

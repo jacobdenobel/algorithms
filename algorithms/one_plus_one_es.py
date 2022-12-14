@@ -34,3 +34,4 @@ class OnePlusOneES(Algorithm):
                 f = f0
                 n_success += 1
         return (f, a,) 
+        

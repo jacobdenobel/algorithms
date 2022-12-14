@@ -57,17 +57,22 @@ class EvolutionStrategy(Algorithm):
     """contemporary evolution strategy (TODO: check when this was contemporary)"""
     budget: int = DEFAULT_MAX_BUDGET
     mu: int = 4
-    lamb: int = 8
-    plus: bool = True
+    lamb: int = 28
+    plus: bool = False
+
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         dim = problem.meta_data.n_variables
         gamma, tau, eta = 5 * np.pi / 180, (2*dim)**(-1/2), (4*dim)**(-1/4)
-        population = Individual.create_mu(self.mu, dim, -1e-4, 1e-4, problem)
+        
+        population = Individual.create_mu(self.mu, dim, problem.bounds.lb[0], 
+            problem.bounds.ub[0], problem)
         
         while problem.state.evaluations < (self.budget - self.lamb) and \
             not problem.state.optimum_found:
             offspring = []
+
+
             for _ in range(self.lamb):
                 p1, p2 = np.random.choice(population, 2, replace=False)
                 c = p1.recombine(p2)
@@ -81,3 +86,5 @@ class EvolutionStrategy(Algorithm):
             )[:self.mu]
 
         return (population[0].f, population[0].x,)
+
+
