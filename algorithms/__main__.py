@@ -8,6 +8,9 @@ from .one_plus_one_es import OnePlusOneES
 from .unbounded_integer_ea import UnboundedIntegerEA, test_discrete_bbob
 from .gsemo import GSEMO, gsemo_onemax_zeromax
 from .dr1 import DR1
+from .dr2 import DR2
+from .dr3 import DR3
+
 
 real = (
     ParticleSwarmOptimization, 
@@ -33,16 +36,11 @@ multi = (
 if __name__ == '__main__':
     import ioh
 
-    exp = ioh.Experiment(
-        DR1(),
-        range(1, 25),
-        [1],
-        [5],
-        reps=10,
-        logged=True,
-        zip_output=True,
-        remove_data=True                
-    )
-    exp.run()
-
+    p = ioh.get_problem(1, 1, 4)
+    for alg in (DR1(), DR2(), DR3()):
+        alg(p)
+        print(alg)
+        print(p.state)
+        print()
+        p.reset()
     

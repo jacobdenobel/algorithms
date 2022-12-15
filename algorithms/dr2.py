@@ -6,7 +6,7 @@ import ioh
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 
 @dataclass
-class DR1(Algorithm):
+class DR2(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET    
     lambda_: int = 10
 
@@ -14,24 +14,26 @@ class DR1(Algorithm):
         dim = problem.meta_data.n_variables
         beta_scale = 1 / dim
         beta = np.sqrt(beta_scale)
-        zeta = np.array([5/7, 7/5])
-        sigma = np.ones((dim, 1))
-        
-        root_pi = np.sqrt(2/np.pi)
+        c =  beta
+
+        zeta = np.zeros((dim, 1))
+        sigma_local = np.ones((dim, 1))
+        sigma = 1.
+
+        c1 = np.sqrt(c / (2 - c))
+        c2 = np.sqrt(dim) * c1
 
         x_prime = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
 
         while problem.state.evaluations < self.budget and not problem.state.optimum_found:
             z = np.random.normal(size=(dim, self.lambda_))
-            zeta_i = np.random.choice(zeta, self.lambda_)
 
-            x = x_prime + (zeta_i * (sigma * z)).T
+            x = x_prime + (sigma * (sigma_local * z)).T
             f = np.array([problem(xi) for xi in x])
             
             idx = np.argmin(f)
             x_prime = x[idx, :].copy()
-            
-            zeta_sel = np.exp(np.abs(z[:, idx]) - root_pi)
-            sigma *= (np.power(zeta_i[idx], beta) * np.power(zeta_sel, beta_scale)).reshape(-1, 1)
 
-
+            zeta = ((1 - c) * zeta) + (c * z[:, idx].reshape(-1, 1))
+            sigma *= np.power(np.exp((np.linalg.norm(zeta) / c2) - 1 + (1 / (5*dim))), beta)
+            sigma_local *= np.power((np.abs(zeta) / c1) + (7 / 20), beta_scale)         
