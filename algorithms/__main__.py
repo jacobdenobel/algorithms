@@ -35,12 +35,12 @@ multi = (
 
 if __name__ == '__main__':
     import ioh
-
-    p = ioh.get_problem(1, 1, 4)
-    for alg in (DR1(), DR2(), DR3()):
-        alg(p)
-        print(alg)
-        print(p.state)
-        print()
-        p.reset()
+    import numpy as np
+    test_discrete_bbob(dim=100, budget=100_000, stepsize=.01)
+    # d = 10
+    # np.random.seed(10)
+    # p = ioh.get_problem(1, 1, d)
+    # alg = DifferentialEvolution(np=10*d)
+    # alg(p)
+    # print(p.state)
     

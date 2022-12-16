@@ -16,24 +16,18 @@ class Individual:
     
     def mutate(self):
         # TODO: check how we can PROPERLY add multiple N variances
-
-        # Mutate sigma by a lognornormal dist. of zero mean and 1/n variance.
-        rs = np.random.normal(0, 1 / self.x.size, size=self.sigma.size)
-        # n = self.x.size
-        # tau = 1 / (np.sqrt(2 * np.sqrt(n)))
-        # eta = 1 / np.sqrt(2 * n)
-        # rs = 
-        self.sigma = np.clip(self.sigma * np.exp(rs), 1.0, np.inf)
-
+        rs = np.random.normal(0, np.sqrt(1 / self.x.size))
+        self.sigma = max(self.sigma * np.exp(rs), 1.0)
+        
         # Equation (7)
-        s_over_n = self.sigma 
-        P = 1 - (s_over_n / (np.sqrt(1 + np.power(s_over_n, 2)) + 1))
+        s_over_n = self.sigma / self.x.size
+        p = 1 - (s_over_n / (np.sqrt(1 + pow(s_over_n, 2)) + 1))
+
 
         # Mutate x by adding the difference of two geom. dist. random variables
-        log_p = np.log(1 - P)
+        log_p = np.log(1 - p)
         g1 = np.floor(np.log(1 - np.random.uniform(0, 1, self.x.size)) / log_p).astype(int)
         g2 = np.floor(np.log(1 - np.random.uniform(0, 1, self.x.size)) / log_p).astype(int)
-
         self.x += (g1 - g2)
 
     def recombine(self, other: "Individual") -> "Individual":
@@ -52,7 +46,7 @@ class UnboundedIntegerEA(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET
     sigma0: float = None
     # This does not work
-    n_sigma: bool = True
+    n_sigma: bool = False
     verbose: bool = False
 
     def __call__(self, problem: ioh.problem.Integer):
@@ -62,7 +56,7 @@ class UnboundedIntegerEA(Algorithm):
                 np.abs((problem.bounds.lb - problem.bounds.ub)),  
                 1 / problem.meta_data.n_variables
             )
-        ) / problem.meta_data.n_variables
+        )
 
         if self.n_sigma:
             self.sigma0 *= np.ones(problem.meta_data.n_variables) 
