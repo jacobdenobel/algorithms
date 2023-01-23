@@ -49,7 +49,7 @@ class UnboundedIntegerEA(Algorithm):
     n_sigma: bool = False
     verbose: bool = False
 
-    def __call__(self, problem: ioh.problem.Integer):
+    def __call__(self, problem: ioh.problem.IntegerSingleObjective):
         # Sigma proportional to the nth root of the starting area M
         self.sigma0 = self.sigma0 or np.prod(
             pow(
@@ -126,22 +126,33 @@ class Bounds:
     ub: np.ndarray
 
 @dataclass
-class DiscreteBBOB:
-    function: ioh.problem.Real
+class DiscreteBBOB: 
+    function: ioh.problem.RealSingleObjective
     step: float = 0.1
     as_integer: bool = True
 
     def __post_init__(self):
         self.translation = self.function.optimum.x % self.step
-
-    def __call__(self, x):
+        self.bound_underflow = (self.bounds.lb * self.step) + self.translation
+        self.bound_overflow = (self.bounds.ub * self.step) + self.translation
+    
+    def translate(self, x):
         x_prime = x.astype(float)
         if self.as_integer:
+            x_prime = np.round(x)
             x_prime *= self.step
-            
+        else:
+            x_prime = x - (x % self.step)
+                   
         x_prime = x_prime + self.translation
+        x_prime[(x_prime < self.function.bounds.lb) & (x_prime >= self.bound_underflow)] = self.function.bounds.lb
+        x_prime[(x_prime > self.function.bounds.ub) & (x_prime <= self.bound_overflow)] = self.function.bounds.ub
+        return x_prime
+    
+    def __call__(self, x):
+        x_prime = self.translate(x)
         return self.function(x_prime)
-
+        
     @property
     def meta_data(self):
         return self.function.meta_data
@@ -150,16 +161,26 @@ class DiscreteBBOB:
     def state(self):
         return self.function.state
 
+    
+    def get_bounds(self, as_integer):
+        bounds = self.function.bounds
+        if not as_integer:
+            return Bounds(bounds.lb, bounds.ub)
+        
+        return Bounds(
+            np.floor(bounds.lb / self.step).astype(int),
+            np.floor(bounds.ub / self.step).astype(int),
+        )
+    
     @property
     def bounds(self):
-        bounds = self.function.bounds
-        divider = self.step if self.as_integer else 1.
-        t = int if self.as_integer else float
-        return Bounds(
-            (bounds.lb / divider).astype(t),
-            (bounds.ub / divider).astype(t),
-        )
-
+        return self.get_bounds(self.as_integer)
+    
+    @property
+    def n_values(self):
+        bounds = self.get_bounds(True)
+        return (bounds.ub[0] - bounds.lb[0]) + 1
+        
 
 def test_discrete_bbob(pid=1, iid=1, dim=100, stepsize=.1, budget=1e4):
     np.random.seed(20)

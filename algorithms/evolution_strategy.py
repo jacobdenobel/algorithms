@@ -20,7 +20,7 @@ class Individual:
     @staticmethod
     def create(n, lb, ub, fn):
         sigma = np.random.uniform(0, ub, n)
-        x = sigma * np.random.normal(size=n)
+        x = np.random.uniform(lb, ub, size=n)
         omega = np.random.uniform(0, 2 * np.pi, int(n * (n - 1) / 2))
         return Individual(x, sigma, omega, fn(x))
 
