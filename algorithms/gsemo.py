@@ -16,7 +16,7 @@ class GSEMO(Algorithm):
     verbose_rate: int = 0
     count_nullops: bool = False
 
-    def __call__(self, f: ioh.problem.Integer) -> None:
+    def __call__(self, f: ioh.problem.IntegerSingleObjective) -> None:
         def dominated(a, b):
             return a.y > b.y and a.c < b.c
 

@@ -15,7 +15,7 @@ class ParticleSwarmOptimization(Algorithm):
     psi_g: float = 1.5
     verbose: bool = False
 
-    def __call__(self, problem: ioh.problem.Real) -> SolutionType:
+    def __call__(self, problem: ioh.problem.RealSingleObjective) -> SolutionType:
         positions = np.random.uniform(
             problem.bounds.lb,
             problem.bounds.ub,

@@ -137,16 +137,18 @@ class DiscreteBBOB:
         self.bound_overflow = (self.bounds.ub * self.step) + self.translation
     
     def translate(self, x):
-        x_prime = x.astype(float)
+        x_prime = np.atleast_1d(x).astype(float)
         if self.as_integer:
-            x_prime = np.round(x)
+            x_prime = np.round(x).astype(float)
             x_prime *= self.step
+            
         else:
             x_prime = x - (x % self.step)
-                   
+        
         x_prime = x_prime + self.translation
-        x_prime[(x_prime < self.function.bounds.lb) & (x_prime >= self.bound_underflow)] = self.function.bounds.lb
-        x_prime[(x_prime > self.function.bounds.ub) & (x_prime <= self.bound_overflow)] = self.function.bounds.ub
+        x_prime[(x_prime < self.function.bounds.lb) & (x_prime >= self.bound_underflow)] = self.function.bounds.lb[0]
+        x_prime[(x_prime > self.function.bounds.ub) & (x_prime <= self.bound_overflow)] = self.function.bounds.ub[0]
+
         return x_prime
     
     def __call__(self, x):
@@ -186,7 +188,7 @@ def test_discrete_bbob(pid=1, iid=1, dim=100, stepsize=.1, budget=1e4):
     np.random.seed(20)
     bbob_function = ioh.get_problem(pid, iid, dim)
     problem = DiscreteBBOB(bbob_function, step=stepsize)
-    ea = UnboundedIntegerEA(10, 20, budget=budget)
+    ea = UnboundedIntegerEA(4, 28, budget=budget)
     ea(problem)
 
     print(problem.state) 
