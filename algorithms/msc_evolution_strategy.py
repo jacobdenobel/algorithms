@@ -69,8 +69,7 @@ class MSCEvolutionStrategy(Algorithm):
         population = Individual.create_mu(self.mu, dim, problem.bounds.lb[0], 
             problem.bounds.ub[0], problem)
         
-        while problem.state.evaluations < (self.budget - self.lamb) and \
-            not problem.state.optimum_found:
+        while self.not_terminate(problem, self.lamb):
             offspring = []
 
 

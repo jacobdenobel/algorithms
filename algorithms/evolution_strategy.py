@@ -45,17 +45,17 @@ class EvolutionStrategy(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET
     mu: int = 4
     lamb: int = 28
-    plus: bool = False
+    plus: bool = True
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         dim = problem.meta_data.n_variables
 
         tau = 1 / np.sqrt(dim)
         tau2 = pow(tau, 2)
+               
         population = Individual.create_mu(self.mu, problem.bounds.lb[0], problem.bounds.ub[0], problem, dim)
         
-        while problem.state.evaluations < (self.budget - self.lamb) and \
-            not problem.state.optimum_found:
+        while self.not_terminate(problem, self.lamb):
             offspring = []
 
             for _ in range(self.lamb):

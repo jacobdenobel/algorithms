@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "algorithms"
+version = "0.0.1"
+authors = [
+  { name="Jacob de Nobel", email="jacobdenobel@gmail.com" },
+]
+description = "Package containing several optimization algorithms"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "ioh>=0.3.8",
+    "numpy>=1.24.2",
+    "matplotlib>=3.5.1",
+    "scipy>=1.8.0",
+    "tqdm>=4.64.1"
+]

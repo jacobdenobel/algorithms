@@ -34,7 +34,7 @@ class ParticleSwarmOptimization(Algorithm):
         idx = np.argmin(f)
         ymin, xmin = f[idx], positions[idx, :]
 
-        while problem.state.evaluations <= (self.budget - self.s) and not problem.state.optimum_found:
+        while self.not_terminate(problem, self.s):
             rp = np.random.uniform(size=(self.s, 1))
             rg = np.random.uniform(size=(self.s, 1))
             velocity = (

@@ -25,7 +25,7 @@ class DR3(Algorithm):
         sigma = 1.
         x_prime = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
 
-        while problem.state.evaluations < self.budget and not problem.state.optimum_found:
+        while self.not_terminate(problem, self.lambda_):
             z = np.random.normal(size=(m, self.lambda_))
             zeta_i = np.random.choice(zeta, self.lambda_)
             y = cm * B.T.dot(z)

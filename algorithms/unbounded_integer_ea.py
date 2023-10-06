@@ -70,9 +70,7 @@ class UnboundedIntegerEA(Algorithm):
             ) for _ in range(self.mu)
         ]
         
-        # while not self.done and not problem.state.optimum_found:
-        while problem.state.evaluations < (self.budget - self.lambda_) and \
-                not problem.state.optimum_found:
+        while self.not_terminate(problem, self.lambda_):
             new_pop = []
             for _ in range(self.lambda_):
                 # Randomly select two parents 
@@ -141,7 +139,6 @@ class DiscreteBBOB:
         if self.as_integer:
             x_prime = np.round(x).astype(float)
             x_prime *= self.step
-            
         else:
             x_prime = x - (x % self.step)
         

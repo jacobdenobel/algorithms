@@ -23,7 +23,7 @@ class DifferentialEvolution(Algorithm):
         f = np.array([problem(x) for x in population])
 
         pmask = np.array([np.where(x)[0] for x in np.abs(np.eye(self.np) - 1).astype(bool)])
-        while problem.state.evaluations <= (self.budget - self.np) and not problem.state.optimum_found:
+        while self.not_terminate(problem, self.np):
             pmask = np.apply_along_axis(np.random.permutation, axis=1, arr=pmask)
             
             X = population.copy()

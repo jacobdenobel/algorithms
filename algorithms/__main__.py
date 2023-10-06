@@ -1,59 +1,84 @@
-from .particle_swarm_optimization import ParticleSwarmOptimization
-from .plant_propagation_algorithm import PlantPropagationAlgorithm
+from argparse import ArgumentParser
+import ioh
+import numpy as np
 from .genetic_algorithm import GeneticAlgorithm
-from .simulated_annealing import SimulatedAnnealing
-from .differential_evolution import DifferentialEvolution
-from .evolution_strategy import EvolutionStrategy
-from .one_plus_one_es import OnePlusOneES
-from .unbounded_integer_ea import UnboundedIntegerEA, test_discrete_bbob, DiscreteBBOB
-from .gsemo import GSEMO, gsemo_onemax_zeromax
+from .unbounded_integer_ea import DiscreteBBOB
+from .maes import MAES
+from .cmaes import CMAES
 from .dr1 import DR1
 from .dr2 import DR2
-from .dr3 import DR3
 
+def ert(evals, budget):
+    import warnings
+    """Computed the expected running time of a list of evaluations.
 
-real = (
-    ParticleSwarmOptimization, 
-    SimulatedAnnealing,
-    EvolutionStrategy,
-    OnePlusOneES,
-    DifferentialEvolution,
-)
+    Parameters
+    ----------
+    evals: list
+        a list of running times (number of evaluations)
+    budget: int
+        the maximum number of evaluations
 
-binary = (
-    GeneticAlgorithm,
-)
+    Returns
+    -------
+    float
+        The expected running time
 
-other = (
-    PlantPropagationAlgorithm,
-    UnboundedIntegerEA, 
-)
+    float
+        The standard deviation of the expected running time
+    int
+        The number of successful runs
 
-multi = (
-    GSEMO, 
-)
+    """
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            evals = np.array(evals)
+            n_succ = (evals < budget).sum()
+            _ert = float(evals.sum()) / int(n_succ)
+        return _ert, np.std(evals), n_succ
+    except ZeroDivisionError:
+        return float("inf"), np.nan, 0
 
+if __name__ == "__main__":
+    parsert = ArgumentParser()
+    parsert.add_argument("-f", "--fid", type=int, default=1)
+    parsert.add_argument("-d", "--dim", type=int, default=5)
+    args = parsert.parse_args()
 
-if __name__ == '__main__':
-    import ioh
-    import numpy as np
+    budget = args.dim * 1e4
+    iterations = 10
     
-    fid = 2
-    dim = 20
-    budget = 100_000
-    stepsize = .001
 
-    # np.random.seed(10)
-    p = ioh.get_problem(1, 1, dim)
-    dp = DiscreteBBOB(p, stepsize)
-    es = EvolutionStrategy(budget=budget)
-    es(dp)
-    print(dp.state)
-    
+    problem = ioh.get_problem(args.fid, 1, args.dim)
+    result_string = (
+        "FCE:\t{:10.8f}\t{:10.4f}\n"
+        "ERT:\t{:10.4f}\t{:10.4f}\n"
+        "{}/{} runs reached target"
+    )
 
-    # fmin(dp, dim)
-    # # ga = GeneticAlgorithm(budget, int_as_binary=False)
-    # # ga(dp)
-    # print(dp.state)
+    for alg in (
+        CMAES(budget, verbose=False), 
+        MAES(budget, verbose=False), 
+        DR1(budget, verbose=False),
+        DR2(budget, verbose=False),
+    ):
+        np.random.seed(10)
+        print(f"Running {iterations} reps with {alg.__class__.__name__}")
+        fopts = []
+        evals = []
+        for i in range(iterations):
+            alg(problem)
+            fopts.append(problem.state.current_best.y)
+            evals.append(problem.state.evaluations)
+            problem.reset()
 
-    test_discrete_bbob(pid=fid, dim=dim, budget=budget, stepsize=stepsize)
+        print(
+            result_string.format(
+                np.mean(fopts),
+                np.std(fopts),
+                *ert(evals, budget),
+                iterations,
+            )
+        )
+        print()
