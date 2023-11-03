@@ -3,46 +3,59 @@ from dataclasses import dataclass
 import numpy as np
 import ioh
 
-from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
+from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET, SIGMA_MAX
+from .utils import Weights, init_lambda
 
 
 @dataclass
 class DR1(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET
+    mu: int = 1
     lambda_: int = 10
     sigma0: float = 1e-1
-    greedy: bool = False
     verbose: bool = True
+    mirrored: bool = True
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
-        dim = problem.meta_data.n_variables
-        beta_scale = 1 / dim
+        n = problem.meta_data.n_variables
+        self.lambda_ = self.lambda_ or init_lambda(n, "default")
+        self.mu = self.mu or self.lambda_ // 2
+
+        beta_scale = 1 / self.n
         beta = np.sqrt(beta_scale)
         zeta = np.array([5 / 7, 7 / 5])
-        sigma = np.ones((dim, 1)) * self.sigma0
-
+        sigma = np.ones((self.n, 1)) * self.sigma0
         root_pi = np.sqrt(2 / np.pi)
 
-        x_prime = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
-        fbest = float("inf")
+        weights = Weights(self.mu, self.lambda_, self.n)
+        x_prime = np.zeros((n, 1))
+        n_samples = self.lambda_ if not self.mirrored else self.lambda_ // 2
+
         while not self.should_terminate(problem, self.lambda_):
-            z = np.random.normal(size=(dim, self.lambda_))
-            zeta_i = np.random.choice(zeta, self.lambda_)
+            Z = np.random.normal(size=(self.n, n_samples))
+            if self.mirrored:
+                Z = np.hstack([Z, -Z])
 
-            x = x_prime + (zeta_i * (sigma * z)).T
-            f = problem(x)
-
+            zeta_i = np.random.choice(zeta, (1, self.lambda_))
+            Y = zeta_i * (sigma * Z)
+            X = x_prime + Y
+            f = problem(X)
             idx = np.argmin(f)
-            if self.greedy and f[idx] < fbest:
-                fbest = f[idx]
-                x_prime = x[idx, :].copy()
-            elif not self.greedy:
-                x_prime = x[idx, :].copy()
 
-            zeta_sel = np.exp(np.abs(z[:, idx]) - root_pi)
-            sigma *= (
-                np.power(zeta_i[idx], beta) * np.power(zeta_sel, beta_scale)
-            ).reshape(-1, 1)
+            mu_best = idx[: self.mu]
+
+            y_prime = np.sum(Y[:, mu_best] * weights.w, axis=1, keepdims=True)
+            x_prime = x_prime + y_prime
+
+            z_prime = np.sum(
+                Z[:, mu_best] * weights.w, axis=1, keepdims=True
+            ) * np.sqrt(weights.mueff)
+            zeta_w = np.sum(zeta_i[:, mu_best] * weights.w)
+            zeta_sel = np.exp(np.abs(z_prime) - root_pi)
+            sigma *= (np.power(zeta_w, beta) * np.power(zeta_sel, beta_scale)).reshape(
+                -1, 1
+            )
+            sigma = sigma.clip(0, SIGMA_MAX)
 
             if self.verbose:
                 print(

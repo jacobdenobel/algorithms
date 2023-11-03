@@ -7,6 +7,7 @@ import numpy as np
 SolutionType = Tuple[float, np.ndarray]
 
 DEFAULT_MAX_BUDGET = 10_000
+SIGMA_MAX = 1e3
 
 
 class Algorithm(abc.ABC):

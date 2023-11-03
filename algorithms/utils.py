@@ -73,19 +73,21 @@ class Weights:
         return np.sqrt(self.c_s * (2 - self.c_s) * self.mueff)
     
 
-def init_lambda(n, method="n/2"):
+def init_lambda(n, method="default", even=True):
     """
         range:      2*mu < lambda < 2*n + 10 
         default:    4 + floor(3 * ln(n))     
 
     """
     if method == "default":
-        return (4 + np.floor(3 * np.log(n))).astype(int) 
-    
+        lamb = (4 + np.floor(3 * np.log(n))).astype(int) 
     elif method == "n/2":
-        return max(32, np.floor(n / 2).astype(int))
+        lamb = max(32, np.floor(n / 2).astype(int))
     else:
         raise ValueError()
+    if even and lamb % 2 != 0:
+        lamb += 1
+    return lamb
     
 
 
