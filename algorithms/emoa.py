@@ -1,4 +1,5 @@
 import numpy as np
+from random import choice
 
 
 def is_pareto_efficient(costs):
