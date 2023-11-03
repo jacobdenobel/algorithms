@@ -58,7 +58,7 @@ class DR2(Algorithm):
 
         w = self.get_weights(self.mu)
         try:
-            while self.not_terminate(problem, self.lambda_):
+            while not self.should_terminate(problem, self.lambda_):
                 z = np.random.normal(size=(dim, n_samples))
                 if self.mirrored:
                     z = np.c_[z, -z]

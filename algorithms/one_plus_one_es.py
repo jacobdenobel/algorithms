@@ -18,7 +18,7 @@ class OnePlusOneES(Algorithm):
         sigma = self.sigma0 or np.linalg.norm(problem.bounds.lb - problem.bounds.ub) / np.sqrt(dim)
         n_success = 0
         
-        while self.not_terminate(problem):
+        while not self.should_terminate(problem):
             t = problem.state.evaluations
             if (t > 0 and t % dim == 0):
                 if (n_success < (2*dim)):

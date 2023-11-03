@@ -17,9 +17,10 @@ class Algorithm(abc.ABC):
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         pass
 
-    def not_terminate(self, problem: ioh.ProblemType, n_evals: int = 0) -> bool:
+    def should_terminate(self, problem: ioh.ProblemType, n_evals: int = 0) -> bool:
         return (
-            problem.state.evaluations + n_evals < self.budget
-            and not problem.state.optimum_found
-            and not ((problem.state.current_best.y - problem.optimum.y) < self.target)
+            problem.state.optimum_found
+            or (problem.state.evaluations + n_evals) > self.budget
+            or (abs(problem.optimum.y - problem.state.current_best.y) < self.target)
         )
+

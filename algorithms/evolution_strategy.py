@@ -55,7 +55,7 @@ class EvolutionStrategy(Algorithm):
                
         population = Individual.create_mu(self.mu, problem.bounds.lb[0], problem.bounds.ub[0], problem, dim)
         
-        while self.not_terminate(problem, self.lamb):
+        while not self.should_terminate(problem, self.lamb):
             offspring = []
 
             for _ in range(self.lamb):

@@ -61,7 +61,7 @@ class GeneticAlgorithm(Algorithm):
         offspring = np.empty((self.lambda_, dim), dtype=int)
         offspring_fitness = np.empty(self.lambda_)
         selected = []
-        while self.not_terminate(problem, self.lambda_):
+        while not self.should_terminate(problem, self.lambda_):
             # Select mu parents (Rank selection)
             idx = np.argsort(fitness)
 

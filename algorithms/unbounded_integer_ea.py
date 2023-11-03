@@ -70,7 +70,7 @@ class UnboundedIntegerEA(Algorithm):
             ) for _ in range(self.mu)
         ]
         
-        while self.not_terminate(problem, self.lambda_):
+        while not self.should_terminate(problem, self.lambda_):
             new_pop = []
             for _ in range(self.lambda_):
                 # Randomly select two parents 

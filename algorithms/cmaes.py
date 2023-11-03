@@ -43,7 +43,7 @@ class CMAES(Algorithm):
         D = np.ones((n, 1))
         invC = np.eye(n)
 
-        while self.not_terminate(problem, self.lambda_):
+        while not self.should_terminate(problem, self.lambda_):
             Z = np.random.normal(0, 1, (n, self.lambda_))
             Y = np.dot(B, D * Z)
             X = m + (sigma * Y)
@@ -59,9 +59,7 @@ class CMAES(Algorithm):
 
             # adapt
             dm = (m - m_old) / sigma
-
             ps = (1 - cs) * ps + (np.sqrt(cs * (2 - cs) * mueff) * invC @ dm)
-
             sigma *= np.exp((cs / damps) * ((np.linalg.norm(ps) / chiN) - 1))
             hs = (
                 np.linalg.norm(ps)
@@ -69,20 +67,25 @@ class CMAES(Algorithm):
             ) < (1.4 + (2 / (n + 1))) * chiN
 
             dhs = (1 - hs) * cc * (2 - cc)
-
             pc = (1 - cc) * pc + (hs * np.sqrt(cc * (2 - cc) * mueff)) * dm
 
 
             rank_one = c1 * pc * pc.T
-            
             old_C = (1 - (c1 * dhs) - c1 - (cmu * w.sum())) * C
-
             rank_mu = cmu * (w * Y[:, mu_best] @ Y[:, mu_best].T)
-
             C = old_C + rank_one + rank_mu
 
-            C = np.triu(C) + np.triu(C, 1).T
-            D, B = np.linalg.eigh(C)
+            if np.isinf(C).any() or np.isnan(C).any() or (not 1e-16 < sigma < 1e6):
+                sigma = self.sigma0
+                pc = np.zeros((n, 1))
+                ps = np.zeros((n, 1))
+                C = np.eye(n)
+                B = np.eye(n)
+                D = np.ones((n, 1))
+                invC = np.eye(n)
+            else:
+                C = np.triu(C) + np.triu(C, 1).T
+                D, B = np.linalg.eigh(C)
 
             D = np.sqrt(D).reshape(-1, 1)
             invC = np.dot(B, D ** -1 * B.T)

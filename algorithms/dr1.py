@@ -25,7 +25,7 @@ class DR1(Algorithm):
 
         x_prime = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
         fbest = float("inf")
-        while self.not_terminate(problem, self.lambda_):
+        while not self.should_terminate(problem, self.lambda_):
             z = np.random.normal(size=(dim, self.lambda_))
             zeta_i = np.random.choice(zeta, self.lambda_)
 

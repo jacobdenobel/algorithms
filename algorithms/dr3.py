@@ -9,6 +9,7 @@ from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 class DR3(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET    
     lambda_: int = 10
+    verbose: bool = False
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         dim = problem.meta_data.n_variables
@@ -25,12 +26,12 @@ class DR3(Algorithm):
         sigma = 1.
         x_prime = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
 
-        while self.not_terminate(problem, self.lambda_):
+        while not self.should_terminate(problem, self.lambda_):
             z = np.random.normal(size=(m, self.lambda_))
             zeta_i = np.random.choice(zeta, self.lambda_)
             y = cm * B.T.dot(z)
             x = x_prime + (sigma * zeta_i * y).T
-            f = np.array([problem(xi) for xi in x])
+            f = problem(x)
             
             idx = np.argmin(f)
             x_prime = x[idx].copy()
