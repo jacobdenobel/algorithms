@@ -6,6 +6,8 @@ from .cmaes import CMAES
 from .dr1 import DR1
 from .dr2 import DR2
 from .dr3 import DR3
+from .egs import EGS
+from .ars import ARSV1
 from .utils import ert
 
 
@@ -32,8 +34,10 @@ if __name__ == "__main__":
     for alg in (
         CMAES(budget, verbose=False), 
         MAES(budget, verbose=False), 
-        # DR1(budget, verbose=False),
-        # DR2(budget, verbose=False),
+        DR1(budget, verbose=False),
+        DR2(budget, verbose=False),
+        # EGS(budget),
+        # ARSV1(budget),
         # DR3(budget, verbose=False),
     ):
         alg_name = alg.__class__.__name__

@@ -17,17 +17,15 @@ class ARSV1(Algorithm):
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         n = problem.meta_data.n_variables
         x_prime = np.zeros((n, 1))
-
-        sigma = self.sigma0
         try:
             while not self.should_terminate(problem, self.lambda_):
-                delta = np.random.normal(size=(self.n, self.lambda_))
+                delta = np.random.normal(size=(n, self.lambda_))
 
                 neg = x_prime - (self.eta * delta)
                 pos = x_prime + (self.eta * delta)
 
-                neg_reward = -problem(neg)
-                pos_reward = -problem(pos)
+                neg_reward = -np.array(problem(neg.T))
+                pos_reward = -np.array(problem(pos.T))
 
                 best_rewards = np.maximum(neg_reward, pos_reward)
                 idx = np.argsort(best_rewards)[::-1]

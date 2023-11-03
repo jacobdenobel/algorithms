@@ -21,27 +21,26 @@ class DR1(Algorithm):
         self.lambda_ = self.lambda_ or init_lambda(n, "default")
         self.mu = self.mu or self.lambda_ // 2
 
-        beta_scale = 1 / self.n
+        beta_scale = 1 / n
         beta = np.sqrt(beta_scale)
         zeta = np.array([5 / 7, 7 / 5])
-        sigma = np.ones((self.n, 1)) * self.sigma0
+        sigma = np.ones((n, 1)) * self.sigma0
         root_pi = np.sqrt(2 / np.pi)
 
-        weights = Weights(self.mu, self.lambda_, self.n)
+        weights = Weights(self.mu, self.lambda_, n)
         x_prime = np.zeros((n, 1))
         n_samples = self.lambda_ if not self.mirrored else self.lambda_ // 2
 
         while not self.should_terminate(problem, self.lambda_):
-            Z = np.random.normal(size=(self.n, n_samples))
+            Z = np.random.normal(size=(n, n_samples))
             if self.mirrored:
                 Z = np.hstack([Z, -Z])
 
             zeta_i = np.random.choice(zeta, (1, self.lambda_))
             Y = zeta_i * (sigma * Z)
             X = x_prime + Y
-            f = problem(X)
-            idx = np.argmin(f)
-
+            f = problem(X.T)
+            idx = np.argsort(f)
             mu_best = idx[: self.mu]
 
             y_prime = np.sum(Y[:, mu_best] * weights.w, axis=1, keepdims=True)

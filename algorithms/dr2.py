@@ -33,18 +33,18 @@ class DR2(Algorithm):
         c2 = np.sqrt(n) * c1
         c3 = 1 / (5 * n)
 
-        weights = Weights(self.mu, self.lambda_, self.n)
+        weights = Weights(self.mu, self.lambda_, n)
         x_prime = np.zeros((n, 1))
         n_samples = self.lambda_ if not self.mirrored else self.lambda_ // 2
 
         try:
             while not self.should_terminate(problem, self.lambda_):
-                Z = np.random.normal(size=(self.n, n_samples))
+                Z = np.random.normal(size=(n, n_samples))
                 if self.mirrored:
                     Z = np.hstack([Z, -Z])
                 Y = sigma * (sigma_local * Z)
                 X = x_prime + Y
-                f = problem(X)
+                f = problem(X.T)
                 idx = np.argsort(f)
                 mu_best = idx[: self.mu]
 

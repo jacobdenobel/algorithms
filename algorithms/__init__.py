@@ -1,7 +1,6 @@
 from .particle_swarm_optimization import ParticleSwarmOptimization
 from .plant_propagation_algorithm import PlantPropagationAlgorithm
 from .genetic_algorithm import GeneticAlgorithm
-from .simulated_annealing import SimulatedAnnealing
 from .differential_evolution import DifferentialEvolution
 from .evolution_strategy import EvolutionStrategy
 from .one_plus_one_es import OnePlusOneES
@@ -14,7 +13,6 @@ from .dr3 import DR3
 
 real = (
     ParticleSwarmOptimization, 
-    SimulatedAnnealing,
     EvolutionStrategy,
     OnePlusOneES,
     DifferentialEvolution,

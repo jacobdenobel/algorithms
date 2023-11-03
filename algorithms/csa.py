@@ -21,17 +21,17 @@ class CSA(Algorithm):
         self.lambda_ = self.lambda_ or init_lambda(n, "default")
         self.mu = self.mu or self.lambda_ // 2
 
-        weights = Weights(self.mu, self.lambda_, self.n)
-        
-        echi = np.sqrt(self.n) * (1 - (1 / self.n / 4) - (1 / self.n / self.n / 21))
+        weights = Weights(self.mu, self.lambda_, n)
+
+        echi = np.sqrt(n) * (1 - (1 / n / 4) - (1 / n / n / 21))
         x_prime = np.zeros((n, 1))
         sigma = self.sigma0
 
-        s = np.ones((self.n, 1))
+        s = np.ones((n, 1))
         n_samples = self.lambda_ if not self.mirrored else self.lambda_ // 2
         try:
             while not self.should_terminate(problem, self.lambda_):
-                Z = np.random.normal(size=(self.n, n_samples))
+                Z = np.random.normal(size=(n, n_samples))
                 if self.mirrored:
                     Z = np.hstack([Z, -Z])
                 X = x_prime + (sigma * Z)

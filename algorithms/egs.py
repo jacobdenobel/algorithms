@@ -9,7 +9,7 @@ from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 @dataclass
 class EGS(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET
-    sigma0: float = 0.02     
+    sigma0: float = .5  
     lambda_: int = 16        
     mu: int = 1             
     kappa: float = 2.0    
@@ -24,8 +24,8 @@ class EGS(Algorithm):
                 Z = np.random.normal(size=(n, self.lambda_))
                 y_pos = x_prime + sigma * Z
                 y_neg = x_prime - sigma * Z
-                f_pos = problem(y_pos)
-                f_neg = problem(y_neg)
+                f_pos = np.array(problem(y_pos.T))
+                f_neg = np.array(problem(y_neg.T))
 
                 z_avg  = np.sum((f_neg - f_pos) * Z, axis=1, keepdims=True)
                 z_prog = (np.sqrt(n) / self.kappa) * (z_avg / np.linalg.norm(z_avg))
