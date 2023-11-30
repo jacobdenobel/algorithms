@@ -36,6 +36,7 @@ The repository currently includes the following black box optimization algorithm
 - **Particle Swarm Optimization (PSO)**
 - **Plant Propagation Algorithm**
 - **Augmented Random Search**
+- **(Self)-Guided ES** (Based on: https://github.com/IJCAI2020-SGES/SGES)
 
 Feel free to explore and experiment with these algorithms.
 

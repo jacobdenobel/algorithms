@@ -26,8 +26,7 @@ class GeneticAlgorithm(Algorithm):
         as_int = np.sum(self.powers2 * np.vstack(np.split(x, self.nint)), axis=1)
         as_int = (as_int - self.ub).clip(-self.ub, self.ub)
         return as_int
-
-
+    
     def __call__(self, problem: ioh.problem.IntegerSingleObjective) -> SolutionType:
         dim = problem.meta_data.n_variables
 
@@ -53,7 +52,6 @@ class GeneticAlgorithm(Algorithm):
             is_binary = True
 
         pm = self.pm or (1 / dim)
-        pc = .9
         # Initialize population
         parents = np.random.choice([0, 1], size=(self.mu, dim))
         fitness = np.array([fitness_func(x) for x in parents])
