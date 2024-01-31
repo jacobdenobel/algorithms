@@ -4,14 +4,16 @@ import numpy as np
 import ioh
 
 from ..algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
+   
+                
 
 @dataclass
 class GuidedES(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET
     lr: float = 0.2
     sigma: float = 0.01
-    lambda_: int = None
-    k: int = 1
+    lambda_: int = 1
+    k: int = 5
 
     def compute_gradients(self, x, problem, U, alpha=0.5):
         # Globalspace param

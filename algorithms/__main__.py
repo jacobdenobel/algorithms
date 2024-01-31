@@ -9,8 +9,10 @@ from .dr3 import DR3
 from .egs import EGS
 from .ars import ARSV1
 from .utils import ert, rastrigin
-from .sges import SalimansES, GuidedES, SelfGuidedES
-
+# from .sges import SalimansES, GuidedES, SelfGuidedES
+from .ges import GuidedES, GuidedESV2
+from .spsa import SPSA
+from .csa_grad import CSAGrad
 
 
 
@@ -38,8 +40,11 @@ if __name__ == "__main__":
 
 
     for alg in (
-        SelfGuidedES(budget),
-        CMAES(budget, verbose=False),
+        # SPSA(budget),
+        GuidedESV2(budget),
+        GuidedES(budget),
+        # GuidedES(budget),
+        # CMAES(budget, verbose=False),
         # DR1(budget, verbose=False),
         # DR2(budget, verbose=False),
         # EGS(budget),

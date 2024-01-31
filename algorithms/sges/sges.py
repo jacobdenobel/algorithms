@@ -12,7 +12,7 @@ class SelfGuidedES(Algorithm):
     lr: float = 0.01
     sigma: float = 0.01
     lambda_: int = 10
-    k: int = None
+    k: int = 1
     auto_alpha: bool = True
 
     def compute_gradients(self, x, problem, U=None, alpha=0.2):

@@ -13,6 +13,7 @@ class CMAES(Algorithm):
     mu: float = None
     sigma0: float = 2.0
     verbose: bool = True
+    sep: bool = False
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         n = problem.meta_data.n_variables
@@ -85,7 +86,11 @@ class CMAES(Algorithm):
                 invC = np.eye(n)
             else:
                 C = np.triu(C) + np.triu(C, 1).T
-                D, B = np.linalg.eigh(C)
+                if not self.sep:
+                    D, B = np.linalg.eigh(C)
+                else:
+                    D = np.diag(C)
+
 
             D = np.sqrt(D).reshape(-1, 1)
             invC = np.dot(B, D ** -1 * B.T)
