@@ -28,7 +28,7 @@ class CMAES(Algorithm):
 
         # Learning rates
         c1 = 2 / ((n + 1.3) ** 2 + mueff)
-        cmu = 2 * (mueff - 2 + 1 / mueff) / ((n + 2) ** 2 + 2 * mueff / 2)
+        cmu = min(1 - c1, 2 * (1 / 4 + mueff - 2 + 1 / mueff) / ((n + 2) ** 2 + 2 * mueff / 2))
         cc = (4 + (mueff / n)) / (n + 4 + (2 * mueff / n))
         cs = (mueff + 2) / (n + mueff + 5)
         damps = 1.0 + (2.0 * max(0.0, np.sqrt((mueff - 1) / (n + 1)) - 1) + cs)
