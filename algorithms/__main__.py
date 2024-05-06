@@ -13,6 +13,7 @@ from .utils import ert, rastrigin
 from .ges import GuidedES, GuidedESV2
 from .spsa import SPSA
 from .csa_grad import CSAGrad
+from .coordinate_decent import CoordinateDescent
 
 
 
@@ -37,12 +38,11 @@ if __name__ == "__main__":
     if args.full_bbob:
         fids = list(range(1, 25))
 
-
-
     for alg in (
+        CoordinateDescent(),
         # SPSA(budget),
-        GuidedESV2(budget),
-        GuidedES(budget),
+        # GuidedESV2(budget),
+        # GuidedES(budget),
         # GuidedES(budget),
         # CMAES(budget, verbose=False),
         # DR1(budget, verbose=False),
