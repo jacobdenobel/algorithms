@@ -37,6 +37,7 @@ The repository currently includes the following black box optimization algorithm
 - **Plant Propagation Algorithm**
 - **Augmented Random Search**
 - **(Self)-Guided ES** (Based on: https://github.com/IJCAI2020-SGES/SGES)
+- **Coordinate Descent (golden selection search)** 
 
 Feel free to explore and experiment with these algorithms.
 
