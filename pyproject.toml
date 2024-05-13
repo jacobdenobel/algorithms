@@ -15,10 +15,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "ioh>=0.3.8",
-    "numpy>=1.24.2",
-    "matplotlib>=3.5.1",
-    "scipy>=1.8.0",
-    "tqdm>=4.64.1"
-]
+
+dynamic = ["dependencies"]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
