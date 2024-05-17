@@ -6,6 +6,9 @@ from .evolution_strategy import EvolutionStrategy
 from .one_plus_one_es import OnePlusOneES
 from .unbounded_integer_ea import UnboundedIntegerEA, test_discrete_bbob, DiscreteBBOB
 from .gsemo import GSEMO, gsemo_onemax_zeromax
+from .coordinate_decent import CoordinateDescent
+from .cmaes import CMAES
+from .csa import CSA
 from .dr1 import DR1
 from .dr2 import DR2
 from .dr3 import DR3

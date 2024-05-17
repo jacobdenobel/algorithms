@@ -7,7 +7,6 @@ import ioh
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 
 TOL = 1e-8
-GR = (1 + np.sqrt(5)) / 2
 INV_PHI = (np.sqrt(5) - 1) / 2  # 1 / phi
 INV_PHI2 = (3 - np.sqrt(5)) / 2  # 1 / phi^2
 
@@ -101,10 +100,10 @@ class CoordinateDescent(Algorithm):
         while self.budget > problem.state.evaluations:
             x_prev = x_current.copy()
             x_copy = x_prev.copy()
-
+            
             for i in range(problem.meta_data.n_variables):
                 x_current[i] = golden_section_search(
-                    make_phi(problem, x_copy, i),
+                    make_phi(problem,  x_copy, i),
                     problem.bounds.lb[i] - TOL,
                     problem.bounds.ub[i] + TOL,
                 )

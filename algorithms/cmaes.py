@@ -35,7 +35,7 @@ class CMAES(Algorithm):
         chiN = n**0.5 * (1 - 1 / (4 * n) + 1 / (21 * n**2))
 
         # dynamic parameters
-        m = np.random.rand(n, 1)
+        m = np.random.uniform(problem.bounds.lb, problem.bounds.ub).reshape(-1, 1)
         dm = np.zeros(n)
         pc = np.zeros((n, 1))
         ps = np.zeros((n, 1))
@@ -53,7 +53,7 @@ class CMAES(Algorithm):
             # select
             fidx = np.argsort(f)
             mu_best = fidx[: self.mu]
-
+            
             # recombine
             m_old = m.copy()
             m = m_old + (1 * ((X[:, mu_best] - m_old) @ w).reshape(-1, 1))

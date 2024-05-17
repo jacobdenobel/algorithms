@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import ioh
 import numpy as np
+import matplotlib.pyplot as plt
 from .maes import MAES
 from .cmaes import CMAES
 from .dr1 import DR1
@@ -8,27 +9,30 @@ from .dr2 import DR2
 from .dr3 import DR3
 from .egs import EGS
 from .ars import ARSV1
-from .utils import ert, rastrigin
+from .utils import ert, rastrigin, get_meshgrid, plot_contour
 # from .sges import SalimansES, GuidedES, SelfGuidedES
 from .ges import GuidedES, GuidedESV2
 from .spsa import SPSA
 from .csa_grad import CSAGrad
 from .coordinate_decent import CoordinateDescent
+from .ortho_es import OrthogonalES
+from .csa import CSA
 
 
 
 if __name__ == "__main__":
     parsert = ArgumentParser()
-    parsert.add_argument("-f", "--fid", type=int, default=1)
-    parsert.add_argument("-d", "--dim", type=int, default=5)
+    parsert.add_argument("-f", "--fid", type=int, default=5)
+    parsert.add_argument("-d", "--dim", type=int, default=2)
     parsert.add_argument("-i", "--iterations", type=int, default=25)
     parsert.add_argument("--logged", action="store_true")
     parsert.add_argument("--full-bbob", action="store_true")
     parsert.add_argument("--rastrigin", action="store_true")
+    parsert.add_argument("--plot", action="store_true")
     args = parsert.parse_args()
 
     budget = args.dim * 1e4
-
+    
     result_string = (
         "FCE:\t{:10.8f}\t{:10.4f}\n"
         "ERT:\t{:10.4f}\t{:10.4f}\n"
@@ -39,6 +43,8 @@ if __name__ == "__main__":
         fids = list(range(1, 25))
 
     for alg in (
+        # OrthogonalES(10_000),
+        CSA(10_000),
         CoordinateDescent(),
         # SPSA(budget),
         # GuidedESV2(budget),
@@ -51,6 +57,8 @@ if __name__ == "__main__":
         # ARSV1(budget),
         # DR3(budget, verbose=False),
     ):
+        
+        
         alg_name = alg.__class__.__name__
         if args.logged:
             logger = ioh.logger.Analyzer(
@@ -71,9 +79,16 @@ if __name__ == "__main__":
             else:
                 problem = ioh.get_problem(fid, 1, args.dim)
 
+
+            if args.plot and args.dim == 2:
+                X, Y, Z = get_meshgrid(problem, -5, 5)
+                plot_contour(X, Y, Z)
+                plt.show()
+                problem.reset()
+                
             if args.logged:
                 problem.attach_logger(logger)
-
+            
             fopts = []
             evals = []
             n_succ = 0
