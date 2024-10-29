@@ -17,21 +17,22 @@ from .csa_grad import CSAGrad
 from .coordinate_decent import CoordinateDescent
 from .ortho_es import OrthogonalES
 from .csa import CSA
-
+from .nelder_mead import NelderMead
+from .cholesky_cma import CholeskyCMA
 
 
 if __name__ == "__main__":
     parsert = ArgumentParser()
-    parsert.add_argument("-f", "--fid", type=int, default=5)
+    parsert.add_argument("-f", "--fid", type=int, default=8)
     parsert.add_argument("-d", "--dim", type=int, default=2)
-    parsert.add_argument("-i", "--iterations", type=int, default=25)
+    parsert.add_argument("-i", "--iterations", type=int, default=1)
     parsert.add_argument("--logged", action="store_true")
     parsert.add_argument("--full-bbob", action="store_true")
     parsert.add_argument("--rastrigin", action="store_true")
     parsert.add_argument("--plot", action="store_true")
     args = parsert.parse_args()
 
-    budget = args.dim * 1e4
+    budget = args.dim * 5e4
     
     result_string = (
         "FCE:\t{:10.8f}\t{:10.4f}\n"
@@ -44,13 +45,15 @@ if __name__ == "__main__":
 
     for alg in (
         # OrthogonalES(10_000),
-        CSA(10_000),
-        CoordinateDescent(),
+        CSA(budget),
+        # CoordinateDescent(),
+        # NelderMead(),
         # SPSA(budget),
         # GuidedESV2(budget),
         # GuidedES(budget),
         # GuidedES(budget),
-        # CMAES(budget, verbose=False),
+        CMAES(budget, verbose=False),
+        CholeskyCMA(budget), 
         # DR1(budget, verbose=False),
         # DR2(budget, verbose=False),
         # EGS(budget),
@@ -93,7 +96,7 @@ if __name__ == "__main__":
             evals = []
             n_succ = 0
             print(
-                f"Running {args.iterations} reps with {alg_name} on {problem} in {args.dim}D"
+                f"Running {args.iterations} reps with {alg_name} on {problem}"
             )
             for i in range(args.iterations):
                 alg(problem)

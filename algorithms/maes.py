@@ -29,7 +29,8 @@ class MAES(Algorithm):
         d_s = 1 + c_s + 2 * max(0, np.sqrt((mueff - 1) / (n + 1)) - 1)
         sqrt_s = np.sqrt(c_s * (2 - c_s) * mueff)
 
-        m = np.random.uniform(problem.bounds.lb, problem.bounds.ub).reshape(-1, 1)
+        # m = np.random.uniform(problem.bounds.lb, problem.bounds.ub).reshape(-1, 1)
+        m = np.zeros((n, 1))
         sigma = self.sigma0
         M = np.eye(n)
         s = np.ones((n, 1))
@@ -53,3 +54,6 @@ class MAES(Algorithm):
                 + ((0.5 * c_mu * w) * Y[:, mu_best]).dot(Z[:, mu_best].T)
             )
             sigma = sigma * np.exp(c_s / d_s * (np.linalg.norm(s) / echi - 1))
+
+            print(problem.state.evaluations, sigma, np.mean(f), problem.state.current_best.y)
+                

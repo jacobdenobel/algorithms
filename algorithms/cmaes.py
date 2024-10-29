@@ -14,17 +14,26 @@ class CMAES(Algorithm):
     sigma0: float = 2.0
     verbose: bool = True
     sep: bool = False
+    
+    def restart(self, n):
+        self.m = np.zeros((n, 1))
+        self.pc = np.zeros((n, 1))
+        self.ps = np.zeros((n, 1))
+        self.B = np.eye(n)
+        self.C = np.eye(n)
+        self.D = np.ones((n, 1))
+        self.invC = np.eye(n)
+        self.sigma = self.sigma0
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         n = problem.meta_data.n_variables
         self.lambda_ = self.lambda_ or (4 + np.floor(3 * np.log(n))).astype(int)
         self.mu = self.lambda_ // 2
-        sigma = self.sigma0
         # w
         w = np.log((self.lambda_ + 1) / 2) - np.log(np.arange(1, self.lambda_ + 1))
         w = w[: self.mu]
-        mueff = w.sum() ** 2 / (w**2).sum()
         w = w / w.sum()
+        mueff = w.sum() ** 2 / (w**2).sum()
 
         # Learning rates
         c1 = 2 / ((n + 1.3) ** 2 + mueff)
@@ -35,19 +44,14 @@ class CMAES(Algorithm):
         chiN = n**0.5 * (1 - 1 / (4 * n) + 1 / (21 * n**2))
 
         # dynamic parameters
-        m = np.random.uniform(problem.bounds.lb, problem.bounds.ub).reshape(-1, 1)
-        dm = np.zeros(n)
-        pc = np.zeros((n, 1))
-        ps = np.zeros((n, 1))
-        B = np.eye(n)
-        C = np.eye(n)
-        D = np.ones((n, 1))
-        invC = np.eye(n)
-
+        # m = np.random.uniform(problem.bounds.lb, problem.bounds.ub).reshape(-1, 1)
+        self.restart(n)
+        std_cache = np.zeros(10)
+        self.g = 0
         while not self.should_terminate(problem, self.lambda_):
             Z = np.random.normal(0, 1, (n, self.lambda_))
-            Y = np.dot(B, D * Z)
-            X = m + (sigma * Y)
+            Y = np.dot(self.B, self.D * Z)
+            X = self.m + (self.sigma * Y)
             f = np.array(problem(X.T))
 
             # select
@@ -55,42 +59,45 @@ class CMAES(Algorithm):
             mu_best = fidx[: self.mu]
             
             # recombine
-            m_old = m.copy()
-            m = m_old + (1 * ((X[:, mu_best] - m_old) @ w).reshape(-1, 1))
+            m_old = self.m.copy()
+            self.m = m_old + (1 * ((X[:, mu_best] - m_old) @ w).reshape(-1, 1))
 
             # adapt
-            dm = (m - m_old) / sigma
-            ps = (1 - cs) * ps + (np.sqrt(cs * (2 - cs) * mueff) * invC @ dm)
-            sigma *= np.exp((cs / damps) * ((np.linalg.norm(ps) / chiN) - 1))
+            dm = (self.m - m_old) / self.sigma
+            self.ps = (1 - cs) * self.ps + (np.sqrt(cs * (2 - cs) * mueff) * self.invC @ dm)
+            self.sigma *= np.exp((cs / damps) * ((np.linalg.norm(self.ps) / chiN) - 1))
             hs = (
-                np.linalg.norm(ps)
+                np.linalg.norm(self.ps)
                 / np.sqrt(1 - np.power(1 - cs, 2 * (problem.state.evaluations / self.lambda_)))
             ) < (1.4 + (2 / (n + 1))) * chiN
 
             dhs = (1 - hs) * cc * (2 - cc)
-            pc = (1 - cc) * pc + (hs * np.sqrt(cc * (2 - cc) * mueff)) * dm
+            self.pc = (1 - cc) * self.pc + (hs * np.sqrt(cc * (2 - cc) * mueff)) * dm
 
 
-            rank_one = c1 * pc * pc.T
-            old_C = (1 - (c1 * dhs) - c1 - (cmu * w.sum())) * C
+            rank_one = c1 * self.pc * self.pc.T
+            old_C = (1 - (c1 * dhs) - c1 - (cmu * w.sum())) * self.C
             rank_mu = cmu * (w * Y[:, mu_best] @ Y[:, mu_best].T)
-            C = old_C + rank_one + rank_mu
-
-            if np.isinf(C).any() or np.isnan(C).any() or (not 1e-16 < sigma < 1e6):
-                sigma = self.sigma0
-                pc = np.zeros((n, 1))
-                ps = np.zeros((n, 1))
-                C = np.eye(n)
-                B = np.eye(n)
-                D = np.ones((n, 1))
-                invC = np.eye(n)
+            self.C = old_C + rank_one + rank_mu
+            self.g += 1
+            std_cache[self.g % 10] = np.std(f)
+            if (
+                np.isinf(self.C).any() 
+                or np.isnan(self.C).any() 
+                or (not 1e-3 < self.sigma < 1e6)
+                # or np.std(std_cache) < 1e-4
+            ):
+                self.restart(n)
             else:
-                C = np.triu(C) + np.triu(C, 1).T
+                self.C = np.triu(self.C) + np.triu(self.C, 1).T
                 if not self.sep:
-                    D, B = np.linalg.eigh(C)
+                    self.D, self.B = np.linalg.eigh(self.C)
                 else:
-                    D = np.diag(C)
+                    self.D = np.diag(self.C)
 
 
-            D = np.sqrt(D).reshape(-1, 1)
-            invC = np.dot(B, D ** -1 * B.T)
+            self.D = np.sqrt(self.D).reshape(-1, 1)
+            self.invC = np.dot(self.B, self.D ** -1 * self.B.T)
+            
+            # print(problem.state.evaluations, self.sigma, np.mean(f), problem.state.current_best.y)
+            

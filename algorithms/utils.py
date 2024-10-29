@@ -156,3 +156,103 @@ def lunacek(x: np.ndarray) -> float:
         secondSum += (x[i] - mu2) ** 2
         thirdSum += 1.0 - np.cos(2 * np.pi * (x[i] - mu1))
     return min(firstSum, 1.0 * problemDimensions + secondSum) + 10 * thirdSum
+
+
+@dataclass
+class UncertaintyHandling:
+    """Checks whether the noise in the objective function is such that we
+    should skip our parameter update. For an ES, we can call this like so:
+    
+        >>> uch = UncertaintyHandling()
+        >>> while True:
+        >>>     X = es.mutate()
+        >>>     f = problem(X)
+        >>>     uch.update(problem, X, f)
+        >>>     if uch.should_update:
+        >>>         es.adapt() 
+
+    Attributes
+    ----------
+        active: bool
+            Whether the strategy should be applied
+        update_timer: int = 1
+            How often the strategy should be called, i.e. 1 is every iteration
+        max_averaging: float = 25.0
+            Upper bound on the number of fitness evals by the strategy (per candidate)
+        targetnoise: float = 0.12
+            Target level of noise
+        verbose: bool = True
+            Whether to print logs
+        averaging_f: float = 1.0
+            State variable
+        averaging: int = 1
+            State variable
+        S: float = 0.12
+            State variable    
+    """
+    
+    active: bool
+    update_timer: int = 1
+    max_averaging: float = 25.0
+    targetnoise: float = 0.12
+    verbose: bool = True
+    averaging_f: float = 1.0
+    averaging: int = 1
+    S: float = 0.12
+
+    def update(self, problem: callable, X: np.ndarray, f: np.ndarray) -> None:
+        """Update the strategy. Should be called after mutate
+        
+        Parameters
+        ----------
+        problem: callable(numpy.ndarray) -> float
+            The objective function
+        X: np.ndarray   
+            Matrix of sample points
+        f: np.ndarray
+            The values of f(X)
+        """
+        
+        idx = np.argsort(f)
+        self.update_timer -= 1
+        if self.active and self.update_timer <= 0:
+            n, lambda_ = X.shape            
+            fu = f.copy()
+            self.update_timer = int(np.ceil(40 / lambda_))
+            # find two random individuals for re-evaluation
+            i1, i2 = np.random.choice(lambda_, size=2, replace=False)
+            # re-evaluate
+            fu[i1] = np.median(
+                [problem.eval_sequential(X[:, i1]) for _ in range(self.averaging)]
+            )
+            fu[i2] = np.median(
+                [problem.eval_sequential(X[:, i1]) for _ in range(self.averaging)]
+            )
+
+            idx2 = np.argsort(fu)
+
+            # compute rank difference statistics (inspired by Hansen 2008, but simplified)
+            self.S = abs(idx[i1] - idx2[i1]) + abs(idx[i2] - idx2[i2])
+            self.S /= 2 * (lambda_ - 1)
+
+            # accumulate
+            c_uh = max(1.0, 10.0 * lambda_ / n)
+
+            self.averaging_f *= np.exp(c_uh * (self.S - self.targetnoise))
+            self.averaging_f = max(1.0, min(self.max_averaging, self.averaging_f))
+
+            # adapt amount of averaging
+            self.averaging = int(round(self.averaging_f))
+
+            # incorporate additional fitness evaluation
+            f[i1] = 0.5 * (f[i1] + fu[i1])
+            f[i2] = 0.5 * (f[i2] + fu[i2])
+            
+            if verbose:
+                print(f"Updated UCH S: {self.S} n_avg {self.averaging}")
+
+        return idx, f
+
+    def should_update(self) -> bool:
+        """Should be called before adapt"""
+        return not self.active or self.S <= self.targetnoise

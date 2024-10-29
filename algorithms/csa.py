@@ -27,14 +27,16 @@ class CSA(Algorithm):
         x_prime = np.zeros((n, 1))
         sigma = self.sigma0
 
-        s = np.ones((n, 1))
+        s = np.zeros((n, 1))
         n_samples = self.lambda_ if not self.mirrored else self.lambda_ // 2
+
         try:
             while not self.should_terminate(problem, self.lambda_):
                 Z = np.random.normal(size=(n, n_samples))
                 if self.mirrored:
                     Z = np.hstack([Z, -Z])
                 X = x_prime + (sigma * Z)
+               
                 f = problem(X.T) 
                 idx = np.argsort(f)
 
@@ -45,6 +47,8 @@ class CSA(Algorithm):
 
                 sigma = sigma * np.exp(weights.c_s / weights.d_s * (np.linalg.norm(s) / echi - 1))
 
+                # print(problem.state.evaluations, sigma, np.mean(f), problem.state.current_best.y)
+                
         except KeyboardInterrupt:
             pass
         return x_prime

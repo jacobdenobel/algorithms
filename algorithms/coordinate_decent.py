@@ -107,7 +107,9 @@ class CoordinateDescent(Algorithm):
                     problem.bounds.lb[i] - TOL,
                     problem.bounds.ub[i] + TOL,
                 )
-
+            
+            print(problem.state.evaluations,  np.linalg.norm(x_current - x_prev), problem.state.current_best.y)
+              
             # Check for convergence
             if np.linalg.norm(x_current - x_prev) < self.tol:
                 break
