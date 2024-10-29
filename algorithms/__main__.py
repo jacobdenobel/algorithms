@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     for alg in (
         # OrthogonalES(10_000),
-        CSA(budget),
+        # CSA(budget),
         # CoordinateDescent(),
         # NelderMead(),
         # SPSA(budget),

@@ -26,18 +26,27 @@ class CholeskyCMA(Algorithm):
         self.lamb = lamb or int(4 + np.floor(3 * np.log(self.n)))
         self.mu = max(1, int(np.floor(self.lamb) / 2))
         
+        # Weights
         log_mu = np.log(self.mu + 1)
         log_i = np.log(np.arange(1, self.mu + 1))
         w = (log_mu - log_i) / (self.mu * log_mu - np.sum(log_i))
         self.w = (w / w.sum()).reshape(-1, 1)
-
         self.mueff = 1.0/np.sum(np.square(self.w))
-        self.cs = np.sqrt(self.mueff) / (np.sqrt(self.n) + np.sqrt(self.mueff))
-        self.cc = 4 / (self.n + 4)
-        self.ccov = 2 / pow(self.n + np.sqrt(2), 2)
-        self.damps = 1.0 + (2.0 * max(0.0, np.sqrt((self.mueff - 1) / (self.n + 1)) - 1) + self.cs)
-        self.chiN = self.n**0.5 * (1 - 1 / (4 * self.n) + 1 / (21 * self.n**2))
+
+        # Learning rates
+        self.cs = np.sqrt(self.mueff)/(np.sqrt(self.n) + np.sqrt(self.mueff))
+        self.cc = 4.0 / (self.n + 4.0)
+        self.ccov = 2.0 / np.square(self.n + np.sqrt(2.0))
         
+        # Normalizers
+        self.damps = 1.0 + 2.0*np.maximum(0.0, np.sqrt((self.mueff - 1.0)/(self.n + 1.0)) - 1.0) + self.cs
+        self.chiN =  np.sqrt(self.n)*(1.0 - 1.0/(4.0*self.n) + 1.0/(21.0*np.square(self.n)))
+        
+        # print("cs", self.cs)
+        # print("cc", self.cc)
+        # print("ccov", self.ccov)
+        # print("damps", self.damps)
+                
     def mutate(self, problem):
         self.Z = np.random.normal(0, 1, size=(self.n, self.lamb))
         self.Y = np.dot(self.A, self.Z)
@@ -67,13 +76,15 @@ class CholeskyCMA(Algorithm):
             
         self.ps = (1 - self.cs) * self.ps + \
             (np.sqrt(self.cs * (2 - self.cs) * self.mueff) * self.zw)
-            
+        
         self.sigma = self.sigma * np.exp((self.cs / self.damps) * \
             ((np.linalg.norm(self.ps) / self.chiN)-1))
-    
+
+        
     def restart(self, problem, lamb: int = None):    
         sigma0 = (problem.bounds.ub[0] - problem.bounds.lb[0]) / 4
         x0 = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
+        
         self.initialize(x0, sigma0, lamb)
     
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
@@ -85,7 +96,7 @@ class CholeskyCMA(Algorithm):
             if (
                 np.isinf(self.A).any() 
                 or np.isnan(self.A).any() 
-                or (not 1e-3 < self.sigma < 1e6)
+                or (not 1e-16 < self.sigma < 1e6)
                 # or np.std(std_cache) < 1e-4
             ):
                 self.restart(problem)

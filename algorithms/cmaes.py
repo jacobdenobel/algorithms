@@ -14,6 +14,7 @@ class CMAES(Algorithm):
     sigma0: float = 2.0
     verbose: bool = True
     sep: bool = False
+    old_lr: bool = False
     
     def restart(self, n):
         self.m = np.zeros((n, 1))
@@ -36,10 +37,18 @@ class CMAES(Algorithm):
         mueff = w.sum() ** 2 / (w**2).sum()
 
         # Learning rates
-        c1 = 2 / ((n + 1.3) ** 2 + mueff)
-        cmu = min(1 - c1, 2 * (1 / 4 + mueff - 2 + 1 / mueff) / ((n + 2) ** 2 + 2 * mueff / 2))
-        cc = (4 + (mueff / n)) / (n + 4 + (2 * mueff / n))
-        cs = (mueff + 2) / (n + mueff + 5)
+        if not self.old_lr:
+            c1 = 2 / ((n + 1.3) ** 2 + mueff)
+            cmu = min(1 - c1, 2 * (1 / 4 + mueff - 2 + 1 / mueff) / ((n + 2) ** 2 + 2 * mueff / 2))
+            cc = (4 + (mueff / n)) / (n + 4 + (2 * mueff / n))
+            cs = (mueff + 2) / (n + mueff + 5)
+        else:
+            cs = np.sqrt(mueff)/(np.sqrt(n) + np.sqrt(mueff))
+            cc = 4.0 / (n + 4.0)
+            ccov = 2.0 / np.square(n + np.sqrt(2.0))
+        
+        
+        # Normalizers
         damps = 1.0 + (2.0 * max(0.0, np.sqrt((mueff - 1) / (n + 1)) - 1) + cs)
         chiN = n**0.5 * (1 - 1 / (4 * n) + 1 / (21 * n**2))
 
@@ -74,17 +83,22 @@ class CMAES(Algorithm):
             dhs = (1 - hs) * cc * (2 - cc)
             self.pc = (1 - cc) * self.pc + (hs * np.sqrt(cc * (2 - cc) * mueff)) * dm
 
-
-            rank_one = c1 * self.pc * self.pc.T
-            old_C = (1 - (c1 * dhs) - c1 - (cmu * w.sum())) * self.C
-            rank_mu = cmu * (w * Y[:, mu_best] @ Y[:, mu_best].T)
+            if not self.old_lr:
+                rank_one = c1 * self.pc * self.pc.T
+                old_C = (1 - (c1 * dhs) - c1 - (cmu * w.sum())) * self.C
+                rank_mu = cmu * (w * Y[:, mu_best] @ Y[:, mu_best].T)
+            else:
+                old_C = (1 - ccov) * self.C
+                rank_one = (ccov / mueff) * self.pc * self.pc.T
+                rank_mu = ccov * (1 - (1 / mueff)) * (w * Y[:, mu_best] @ Y[:, mu_best].T)
             self.C = old_C + rank_one + rank_mu
+            
             self.g += 1
             std_cache[self.g % 10] = np.std(f)
             if (
                 np.isinf(self.C).any() 
                 or np.isnan(self.C).any() 
-                or (not 1e-3 < self.sigma < 1e6)
+                or (not 1e-16 < self.sigma < 1e6)
                 # or np.std(std_cache) < 1e-4
             ):
                 self.restart(n)
