@@ -4,11 +4,11 @@ import numpy as np
 import ioh
 
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
+from .utils import is_matrix_valid
 
 @dataclass
-class CholeskyCMA(Algorithm):
+class CholeskyCMAES(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET
-    
     
     def initialize(self, x0: np.ndarray, sigma0: float, lamb: int = None):
         self.x0 = np.asarray(x0).copy().reshape(-1, 1)
@@ -65,12 +65,11 @@ class CholeskyCMA(Algorithm):
         vnorm = (self.v * self.v).sum()
         sqrt1cc = np.sqrt(1.0 - self.ccov)
         sqrt1ccv = np.sqrt(1.0 + (self.ccov / (1.0 - self.ccov) * vnorm))
-        va =  np.dot(self.v, np.dot(self.v.T, self.A_inv))        
-        
+        va =  np.dot(self.v, np.dot(self.v.T, self.A_inv))
+                
         self.A_inv = (1 / sqrt1cc * self.A_inv) - (
             (1 / (sqrt1cc * vnorm)) * (1 - (1 / sqrt1ccv)) * va
         )
-        
         self.A = sqrt1cc * self.A + \
             ((sqrt1cc / vnorm * (sqrt1ccv - 1)) * self.pc * self.v.T)
             
@@ -94,10 +93,11 @@ class CholeskyCMA(Algorithm):
             self.mutate(problem)
             self.adapt()
             if (
-                np.isinf(self.A).any() 
-                or np.isnan(self.A).any() 
-                or (not 1e-16 < self.sigma < 1e6)
-                # or np.std(std_cache) < 1e-4
+                is_matrix_valid(self.A)
+                or is_matrix_valid(self.A_inv)
+                or (not 1e-14 < self.sigma < 1e6)
             ):
                 self.restart(problem)
             
+
+

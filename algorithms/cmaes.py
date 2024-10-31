@@ -4,7 +4,7 @@ import numpy as np
 import ioh
 
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
-
+from .utils import is_matrix_valid
 
 @dataclass
 class CMAES(Algorithm):
@@ -96,10 +96,8 @@ class CMAES(Algorithm):
             self.g += 1
             std_cache[self.g % 10] = np.std(f)
             if (
-                np.isinf(self.C).any() 
-                or np.isnan(self.C).any() 
-                or (not 1e-16 < self.sigma < 1e6)
-                # or np.std(std_cache) < 1e-4
+                is_matrix_valid(self.C)
+                or (not 1e-14 < self.sigma < 1e6)
             ):
                 self.restart(n)
             else:

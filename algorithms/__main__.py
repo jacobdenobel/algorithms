@@ -18,7 +18,8 @@ from .coordinate_decent import CoordinateDescent
 from .ortho_es import OrthogonalES
 from .csa import CSA
 from .nelder_mead import NelderMead
-from .cholesky_cma import CholeskyCMA
+from .cholesky_cma import CholeskyCMAES
+from .one_plus_one_cma import OnePlusOneCholeskyCMAES, OnePlusOneCMAES
 
 
 if __name__ == "__main__":
@@ -52,8 +53,10 @@ if __name__ == "__main__":
         # GuidedESV2(budget),
         # GuidedES(budget),
         # GuidedES(budget),
-        CMAES(budget, verbose=False),
-        CholeskyCMA(budget), 
+        CMAES(budget, verbose=False, old_lr=True),
+        CholeskyCMAES(budget),
+        OnePlusOneCholeskyCMAES(budget),
+        OnePlusOneCMAES(budget),
         # DR1(budget, verbose=False),
         # DR2(budget, verbose=False),
         # EGS(budget),

@@ -4,12 +4,14 @@ This repository houses a collection of various black box optimization algorithms
 
 ## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Algorithms](#algorithms)
-3. [Getting Started](#getting-started)
-4. [Usage](#usage)
-5. [Contributing](#contributing)
-6. [License](#license)
+- [Jacob's Algorithm Collection](#jacobs-algorithm-collection)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Algorithms](#algorithms)
+  - [Getting Started](#getting-started)
+  - [Usage](#usage)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Introduction
 
@@ -25,6 +27,9 @@ The repository currently includes the following black box optimization algorithm
 - **Evolution Strategy (Schwefel)**
 - **CSA-ES (Evolution Strategy with Cumulative Stepsize Adaptation)**
 - **CMA-ES (Covariance Matrix Adaptation Evolution Strategy)**
+- **Cholesky CMA-ES (Covariance Matrix Adaptation Evolution Strategy)**
+- **(1+1) CMA-ES (Covariance Matrix Adaptation Evolution Strategy)**
+- **(1+1) Cholesky CMA-ES (Covariance Matrix Adaptation Evolution Strategy)**
 - **MA-ES (Matrix Adaptation Evolution Strategy)**
 - **DR1 (Derandomized ES)**
 - **DR2 (Derandomized ES)**
@@ -38,6 +43,7 @@ The repository currently includes the following black box optimization algorithm
 - **Augmented Random Search**
 - **(Self)-Guided ES** (Based on: https://github.com/IJCAI2020-SGES/SGES)
 - **Coordinate Descent (golden selection search)** 
+- **Nelder Mead**
 
 Feel free to explore and experiment with these algorithms.
 
