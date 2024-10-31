@@ -90,7 +90,7 @@ def init_lambda(n, method="default", even=True):
         lamb += 1
     return lamb
 
-def is_matrix_valid(M, lb: float = 1e-20, ub: float = 1e10):
+def is_matrix_valid(M, ub: float = 1e20):
     """Checks whether a matrix M is valid; non-numeric or oob values
     
     Returns
@@ -99,7 +99,7 @@ def is_matrix_valid(M, lb: float = 1e-20, ub: float = 1e10):
     """
     
     nan_or_inf = np.isinf(M).any() or np.isnan(M).any() 
-    oob = (np.abs(M) < lb).any() or (np.abs(M) > ub).any()
+    oob = (np.abs(M) > ub).any()
     return nan_or_inf or oob
 
 
