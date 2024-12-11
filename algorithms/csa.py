@@ -5,6 +5,7 @@ import ioh
 
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 from .utils import Weights, init_lambda
+from .sampling import Sampler, Normal
 
 
 @dataclass
@@ -15,6 +16,7 @@ class CSA(Algorithm):
     sigma0: float = .5
     verbose: bool = True
     mirrored: bool = False
+    sampler: Sampler = Normal()
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
         n = problem.meta_data.n_variables  
@@ -23,29 +25,29 @@ class CSA(Algorithm):
 
         weights = Weights(self.mu, self.lambda_, n)
 
-        echi = np.sqrt(n) * (1 - (1 / n / 4) - (1 / n / n / 21))
+        echi = self.sampler.expected_length(n)
         x_prime = np.zeros((n, 1))
-        sigma = self.sigma0
+        self.sigma = self.sigma0
 
         s = np.zeros((n, 1))
         n_samples = self.lambda_ if not self.mirrored else self.lambda_ // 2
 
         try:
             while not self.should_terminate(problem, self.lambda_):
-                Z = np.random.normal(size=(n, n_samples))
+                Z = self.sampler.sample_k(n, n_samples).T
                 if self.mirrored:
                     Z = np.hstack([Z, -Z])
-                X = x_prime + (sigma * Z)
+                X = x_prime + (self.sigma * Z)
                
                 f = problem(X.T) 
                 idx = np.argsort(f)
 
                 mu_best = idx[: self.mu]
                 z_prime = np.sum(weights.w * Z[:, mu_best], axis=1, keepdims=True)
-                x_prime = x_prime + (sigma * z_prime)
+                x_prime = x_prime + (self.sigma * z_prime)
                 s = ((1 - weights.c_s) * s) + (weights.sqrt_s * z_prime)
 
-                sigma = sigma * np.exp(weights.c_s / weights.d_s * (np.linalg.norm(s) / echi - 1))
+                self.sigma = self.sigma * np.exp(weights.c_s / weights.d_s * (np.linalg.norm(s) / echi - 1))
 
                 # print(problem.state.evaluations, sigma, np.mean(f), problem.state.current_best.y)
                 

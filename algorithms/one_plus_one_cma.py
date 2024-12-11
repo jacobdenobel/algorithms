@@ -47,22 +47,25 @@ class OnePlusOneCMABase(Algorithm):
         self.z = np.random.normal(size=(self.n, 1))
         self.y = self.A @ self.z
         self.x = self.m + (self.sigma * self.y)
+        
         self.f = problem(self.x.ravel())
         self.has_improved = self.f < self.f_parent
+        
 
     def adapt(self):
-        self.p_succ = (1 - self.cp) * self.p_succ + self.cp * self.has_improved
+        self.p_succ = (1 - self.cp) * self.p_succ + (self.cp * self.has_improved)
         self.sigma = self.sigma * np.exp(
             (1 / self.damp) * ((self.p_succ - self.p_tgt_succ) / (1 - self.p_tgt_succ))
         )
 
         if self.f <= self.f_parent:
-            self.m = self.x
+            self.m = self.x.copy()
             self.f_parent = self.f
             self.update_strategy()
-
+            
+            
     def restart(self, problem):
-        sigma0 = (problem.bounds.ub[0] - problem.bounds.lb[0]) / 4
+        sigma0 = (problem.bounds.ub[0] - problem.bounds.lb[0]) / np.sqrt(problem.meta_data.n_variables)
         x0 = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
         self.initialize(x0, sigma0)
         self.f_parent = problem(self.m.ravel())
@@ -75,6 +78,14 @@ class OnePlusOneCMABase(Algorithm):
             self.adapt()
             if is_matrix_valid(self.A) or (not 1e-16 < self.sigma < 1e6):
                 self.restart(problem)
+                
+            if self.has_improved:
+                print(
+                    problem.state.evaluations, 
+                    self.sigma, self.p_succ, 
+                    problem.state.current_best.y, 
+                    problem.state.current.y
+                )
 
 
 @dataclass
@@ -93,7 +104,6 @@ class OnePlusOneCMAES(OnePlusOneCMABase):
                 self.ccov * (np.dot(self.pc, self.pc.T) + (self.cc2 * self.C))
             )
         self.A = np.linalg.cholesky(self.C)
-        # assert np.isclose(self.A@self.A.T, self.C).all()
 
 
 @dataclass

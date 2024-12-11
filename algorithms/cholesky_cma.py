@@ -5,10 +5,12 @@ import ioh
 
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 from .utils import is_matrix_valid
+from .sampling import Sampler, Normal
 
 @dataclass
 class CholeskyCMAES(Algorithm):
     budget: int = DEFAULT_MAX_BUDGET
+    sampler: Sampler = Normal()
     
     def initialize(self, x0: np.ndarray, sigma0: float, lamb: int = None):
         self.x0 = np.asarray(x0).copy().reshape(-1, 1)
@@ -19,7 +21,7 @@ class CholeskyCMAES(Algorithm):
         self.m = self.x0.copy()
         self.A = np.eye(self.n)
         self.A_inv = np.eye(self.n)
-        self.ps = np.zeros((self.n, 1))
+        self.ps = np.ones((self.n, 1))
         self.pc = np.zeros((self.n, 1))
         
         # computed parameters
@@ -40,22 +42,18 @@ class CholeskyCMAES(Algorithm):
         
         # Normalizers
         self.damps = 1.0 + 2.0*np.maximum(0.0, np.sqrt((self.mueff - 1.0)/(self.n + 1.0)) - 1.0) + self.cs
-        self.chiN =  np.sqrt(self.n)*(1.0 - 1.0/(4.0*self.n) + 1.0/(21.0*np.square(self.n)))
-        
-        # print("cs", self.cs)
-        # print("cc", self.cc)
-        # print("ccov", self.ccov)
-        # print("damps", self.damps)
+        self.chiN = self.sampler.expected_length(self.n)
                 
     def mutate(self, problem):
-        self.Z = np.random.normal(0, 1, size=(self.n, self.lamb))
+        self.Z = self.sampler.sample_k(self.n, self.lamb).T
         self.Y = np.dot(self.A, self.Z)
         self.X = self.m + self.sigma * self.Y
         self.f = np.array(problem(self.X.T))
         self.idx = np.argsort(self.f)[:self.mu]
+        
     
     def adapt(self):
-        self.zw   = self.Z[:,  self.idx].dot(self.w).reshape(-1, 1)
+        self.zw = self.Z[:,  self.idx].dot(self.w).reshape(-1, 1)
         self.m = self.X[:,  self.idx].dot(self.w).reshape(-1, 1)
         
         mucc      = np.sqrt(self.cc * (2 - self.cc) * self.mueff)
@@ -80,10 +78,9 @@ class CholeskyCMAES(Algorithm):
             ((np.linalg.norm(self.ps) / self.chiN)-1))
 
         
-    def restart(self, problem, lamb: int = None):    
-        sigma0 = (problem.bounds.ub[0] - problem.bounds.lb[0]) / 4
+    def restart(self, problem, lamb: int = None, sigma0: float = None):    
+        sigma0 = sigma0 or (problem.bounds.ub[0] - problem.bounds.lb[0]) / np.sqrt(problem.meta_data.n_variables)
         x0 = np.random.uniform(problem.bounds.lb, problem.bounds.ub)
-        
         self.initialize(x0, sigma0, lamb)
     
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
@@ -99,5 +96,5 @@ class CholeskyCMAES(Algorithm):
             ):
                 self.restart(problem)
             
-
+            # print(problem.state.evaluations, problem.state.current.y, problem.state.current_best.y)
 

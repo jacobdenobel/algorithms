@@ -5,6 +5,7 @@ import ioh
 
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
 from .utils import is_matrix_valid
+from .sampling import Sampler, Normal
 
 @dataclass
 class CMAES(Algorithm):
@@ -15,6 +16,8 @@ class CMAES(Algorithm):
     verbose: bool = True
     sep: bool = False
     old_lr: bool = False
+    sampler: Sampler = Normal()
+    
     
     def restart(self, n):
         self.m = np.zeros((n, 1))
@@ -43,14 +46,14 @@ class CMAES(Algorithm):
             cc = (4 + (mueff / n)) / (n + 4 + (2 * mueff / n))
             cs = (mueff + 2) / (n + mueff + 5)
         else:
-            cs = np.sqrt(mueff)/(np.sqrt(n) + np.sqrt(mueff))
+            cs = np.sqrt(mueff) / (np.sqrt(n) + np.sqrt(mueff))
             cc = 4.0 / (n + 4.0)
             ccov = 2.0 / np.square(n + np.sqrt(2.0))
         
         
         # Normalizers
         damps = 1.0 + (2.0 * max(0.0, np.sqrt((mueff - 1) / (n + 1)) - 1) + cs)
-        chiN = n**0.5 * (1 - 1 / (4 * n) + 1 / (21 * n**2))
+        chiN = self.sampler.expected_length(n)
 
         # dynamic parameters
         # m = np.random.uniform(problem.bounds.lb, problem.bounds.ub).reshape(-1, 1)
@@ -58,7 +61,7 @@ class CMAES(Algorithm):
         std_cache = np.zeros(10)
         self.g = 0
         while not self.should_terminate(problem, self.lambda_):
-            Z = np.random.normal(0, 1, (n, self.lambda_))
+            Z = self.sampler.sample_k(n, self.lambda_).T
             Y = np.dot(self.B, self.D * Z)
             X = self.m + (self.sigma * Y)
             f = np.array(problem(X.T))
@@ -91,6 +94,7 @@ class CMAES(Algorithm):
                 old_C = (1 - ccov) * self.C
                 rank_one = (ccov / mueff) * self.pc * self.pc.T
                 rank_mu = ccov * (1 - (1 / mueff)) * (w * Y[:, mu_best] @ Y[:, mu_best].T)
+                
             self.C = old_C + rank_one + rank_mu
             
             self.g += 1

@@ -1,3 +1,5 @@
+import itertools
+from time import sleep
 from argparse import ArgumentParser
 import ioh
 import numpy as np
@@ -9,7 +11,7 @@ from .dr2 import DR2
 from .dr3 import DR3
 from .egs import EGS
 from .ars import ARSV1
-from .utils import ert, rastrigin, get_meshgrid, plot_contour
+from .utils import ert, rastrigin, get_meshgrid
 # from .sges import SalimansES, GuidedES, SelfGuidedES
 from .ges import GuidedES, GuidedESV2
 from .spsa import SPSA
@@ -20,20 +22,23 @@ from .csa import CSA
 from .nelder_mead import NelderMead
 from .cholesky_cma import CholeskyCMAES
 from .one_plus_one_cma import OnePlusOneCholeskyCMAES, OnePlusOneCMAES
-
+from .lmmaes import LMMAES
+from .one_plus_one_es import OnePlusOneES
+from .sampling import *
 
 if __name__ == "__main__":
     parsert = ArgumentParser()
     parsert.add_argument("-f", "--fid", type=int, default=8)
     parsert.add_argument("-d", "--dim", type=int, default=2)
-    parsert.add_argument("-i", "--iterations", type=int, default=1)
+    parsert.add_argument("-r", "--iterations", type=int, default=1)
+    parsert.add_argument("-i", "--instances", type=int, default=1)
     parsert.add_argument("--logged", action="store_true")
     parsert.add_argument("--full-bbob", action="store_true")
-    parsert.add_argument("--rastrigin", action="store_true")
     parsert.add_argument("--plot", action="store_true")
     args = parsert.parse_args()
 
-    budget = args.dim * 5e4
+    # dims = (args.dim, )
+    dims = (2, 5, 10, 20)
     
     result_string = (
         "FCE:\t{:10.8f}\t{:10.4f}\n"
@@ -41,9 +46,14 @@ if __name__ == "__main__":
         "{}/{} runs reached target"
     )
     fids = [args.fid]
+    
+    iids = list(range(1, args.instances + 1))
+    
     if args.full_bbob:
         fids = list(range(1, 25))
-
+    
+    sleep(np.random.uniform(0, 2))
+    
     for alg in (
         # OrthogonalES(10_000),
         # CSA(budget),
@@ -53,54 +63,43 @@ if __name__ == "__main__":
         # GuidedESV2(budget),
         # GuidedES(budget),
         # GuidedES(budget),
-        CMAES(budget, verbose=False, old_lr=True),
-        CholeskyCMAES(budget),
-        OnePlusOneCholeskyCMAES(budget),
-        OnePlusOneCMAES(budget),
+        # CMAES(budget, verbose=False, old_lr=True),
+        # LMMAES(),
+        # CholeskyCMAES(),
+        CholeskyCMAES(),
+        CholeskyCMAES(sampler=Uniform()),
+        # CholeskyCMAES(sampler=Logistic()),
+        # CholeskyCMAES(sampler=Laplace()),
+        # OnePlusOneCMAES(),
         # DR1(budget, verbose=False),
         # DR2(budget, verbose=False),
         # EGS(budget),
         # ARSV1(budget),
         # DR3(budget, verbose=False),
     ):
-        
-        
-        alg_name = alg.__class__.__name__
+        alg_name = str(alg)
         if args.logged:
             logger = ioh.logger.Analyzer(
-                algorithm_name=alg_name, root="data", folder_name=alg_name
+                algorithm_name=alg_name, 
+                root="data", 
+                folder_name=alg_name,
+                store_positions=True
             )
-        for fid in fids:
-            np.random.seed(10)
+        for fid, iid, dim in itertools.product(fids, iids, dims):
+            alg.budget = dim * 1e5
+            np.random.seed(11)
             
-            if args.rastrigin:
-                problem = ioh.wrap_problem(
-                    rastrigin,
-                    "rastrigin",
-                    dimension=args.dim,
-                    ub=5,
-                    lb=-5,
-                    calculate_objective=lambda dim, iid: ([0] * dim, 0),
-                )
-            else:
-                problem = ioh.get_problem(fid, 1, args.dim)
-
-
-            if args.plot and args.dim == 2:
-                X, Y, Z = get_meshgrid(problem, -5, 5)
-                plot_contour(X, Y, Z)
-                plt.show()
-                problem.reset()
+            if args.logged and hasattr(alg, 'sigma'):
+                logger.watch(alg, 'sigma')
                 
+            problem = ioh.get_problem(fid, iid, dim)
+
             if args.logged:
                 problem.attach_logger(logger)
             
             fopts = []
             evals = []
             n_succ = 0
-            print(
-                f"Running {args.iterations} reps with {alg_name} on {problem}"
-            )
             for i in range(args.iterations):
                 alg(problem)
                 fopts.append(problem.state.current_best.y)
@@ -110,6 +109,9 @@ if __name__ == "__main__":
                 ) < alg.target
                 problem.reset()
 
+            print(
+                f"Completed {args.iterations} reps with {alg_name} on {problem}"
+            )
             print(
                 result_string.format(
                     np.mean(fopts),
