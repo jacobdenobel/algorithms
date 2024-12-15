@@ -139,37 +139,6 @@ def get_meshgrid(objective_function, lb, ub, delta: float = 0.025, z_tol=1e-8):
     return X, Y, Z
 
 
-def sphere(x: np.ndarray) -> float:
-    assert x.ndim == 1
-    return float(x.dot(x))
-
-
-def rastrigin(x: np.ndarray) -> float:
-    cosi = float(np.sum(np.cos(2 * np.pi * x)))
-    return float(10 * (len(x) - cosi) + sphere(x))
-
-
-def rosenbrock(x: np.ndarray) -> float:
-    x_m_1 = x[:-1] - 1
-    x_diff = x[:-1] ** 2 - x[1:]
-    return float(100 * x_diff.dot(x_diff) + x_m_1.dot(x_m_1))
-
-
-def lunacek(x: np.ndarray) -> float:
-    problemDimensions = len(x)
-    s = 1.0 - (1.0 / (2.0 * np.sqrt(problemDimensions + 20.0) - 8.2))
-    mu1 = 2.5
-    mu2 = -np.sqrt(abs((mu1**2 - 1.0) / s))
-    firstSum = 0.0
-    secondSum = 0.0
-    thirdSum = 0.0
-    for i in range(problemDimensions):
-        firstSum += (x[i] - mu1) ** 2
-        secondSum += (x[i] - mu2) ** 2
-        thirdSum += 1.0 - np.cos(2 * np.pi * (x[i] - mu1))
-    return min(firstSum, 1.0 * problemDimensions + secondSum) + 10 * thirdSum
-
-
 @dataclass
 class UncertaintyHandling:
     """Checks whether the noise in the objective function is such that we

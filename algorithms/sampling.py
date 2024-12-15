@@ -1,6 +1,7 @@
 import abc
 
 import numpy as np
+from scipy import stats
 
 SQRT3 = np.sqrt(3)
 SQRT05 = np.sqrt(0.5)
@@ -44,3 +45,19 @@ class Laplace(Sampler):
 class Logistic(Sampler):
     def __call__(self, dim):
         return np.random.logistic(0, SQRT3pi, size=dim)
+    
+class dWeibull(Sampler):
+    def __call__(self, dim):
+        return stats.dweibull(2.0, scale=1).rvs(size=dim)
+    
+    
+class Cauchy(Sampler):
+    def __call__(self, dim):
+        sample = stats.cauchy(scale=1).rvs(size=dim)
+        while not np.all(np.isfinite(sample)):
+            sample = stats.cauchy(scale=1).rvs(size=dim)
+        return sample.clip(-1e10, 1e10)
+    
+class ShiftedNormal(Sampler):
+    def __call__(self, dim):
+        return np.random.normal(0.5, 1, size=dim)

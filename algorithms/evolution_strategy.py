@@ -1,8 +1,10 @@
 from dataclasses import dataclass, field
+import warnings
 import numpy as np
 import ioh
 
 from .algorithm import Algorithm, SolutionType, DEFAULT_MAX_BUDGET
+from .sampling import Sampler, Normal
 
 @dataclass
 class Individual:
@@ -34,21 +36,25 @@ class Individual:
             self.n
         )
 
-    def mutate(self, tau2):
+    def mutate(self, sampler, tau2):
         self.sigma *= np.random.lognormal(0, tau2)
-        self.x += self.sigma * np.random.normal(size=self.n)
+        self.x += self.sigma * sampler(self.n)
 
 
 @dataclass
 class EvolutionStrategy(Algorithm):
     """Simple ES"""
     budget: int = DEFAULT_MAX_BUDGET
-    mu: int = 4
-    lamb: int = 28
+    mu: int = None
+    lamb: int = None
     plus: bool = True
+    sampler: Sampler = Normal()
 
     def __call__(self, problem: ioh.ProblemType) -> SolutionType:
+        warnings.warn("This implementation sucks ass")
         dim = problem.meta_data.n_variables
+        self.lamb = self.lamb or 5 * dim 
+        self.mu = self.mu or int(self.lamb // 4)
 
         tau = 1 / np.sqrt(dim)
         tau2 = pow(tau, 2)
@@ -61,7 +67,7 @@ class EvolutionStrategy(Algorithm):
             for _ in range(self.lamb):
                 p1, p2 = np.random.choice(population, 2, replace=False)
                 c = p1.recombine(p2)
-                c.mutate(tau2)
+                c.mutate(self.sampler, tau2)
                 c.f = problem(c.x)
                 offspring.append(c)
             
