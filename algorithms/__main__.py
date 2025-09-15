@@ -111,7 +111,8 @@ if __name__ == "__main__":
         # SaEvolutionStrategy(sampler=Logistic()),
         # SaEvolutionStrategy(sampler=Laplace()),
         # SaEvolutionStrategy(sampler=dWeibull()),
-        SaEvolutionStrategy(sampler=Cauchy()),
+        # OnePlusOneCMAES(),
+        CMAES(),
     )
     
     

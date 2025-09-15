@@ -101,7 +101,7 @@ class CMAES(Algorithm):
             std_cache[self.g % 10] = np.std(f)
             if (
                 is_matrix_valid(self.C)
-                or (not 1e-14 < self.sigma < 1e6)
+                or (not 1e-14 < self.sigma or self.sigma > 1e6)
             ):
                 self.restart(n)
             else:

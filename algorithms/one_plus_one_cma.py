@@ -40,14 +40,15 @@ class OnePlusOneCMABase(Algorithm):
         self.cc = 2 / (self.n + 2)
         self.cc2 = self.cc * (2 - self.cc)
         self.ccov = 2 / (self.n**2 + 6)
+        
         self.p_thres = 0.44
         self.p_succ = self.p_tgt_succ
+        self.verbose = False
 
     def mutate(self, problem: ioh.ProblemType):
         self.z = np.random.normal(size=(self.n, 1))
         self.y = self.A @ self.z
         self.x = self.m + (self.sigma * self.y)
-        
         self.f = problem(self.x.ravel())
         self.has_improved = self.f < self.f_parent
         
@@ -79,7 +80,7 @@ class OnePlusOneCMABase(Algorithm):
             if is_matrix_valid(self.A) or (not 1e-16 < self.sigma < 1e6):
                 self.restart(problem)
                 
-            if self.has_improved:
+            if self.has_improved and self.verbose:
                 print(
                     problem.state.evaluations, 
                     self.sigma, self.p_succ, 

@@ -56,7 +56,7 @@ class Cauchy(Sampler):
         sample = stats.cauchy(scale=1).rvs(size=dim)
         while not np.all(np.isfinite(sample)):
             sample = stats.cauchy(scale=1).rvs(size=dim)
-        return sample.clip(-1e10, 1e10)
+        return sample#.clip(-1e10, 1e10)
     
 class ShiftedNormal(Sampler):
     def __call__(self, dim):
